@@ -23,7 +23,8 @@ import java.util.Date;
 import java.util.Map;
 
 /**
- * index controller
+ * <h1>这个类对应运行报表那个界面</h1>
+ *
  * @author xuxueli 2015-12-19 16:13:16
  */
 @Controller
@@ -34,23 +35,30 @@ public class IndexController {
 	@Resource
 	private LoginService loginService;
 
-
+	/**
+	 * <h2>首页</h2>
+	 */
 	@RequestMapping("/")
 	public String index(Model model) {
-
+		// 查询数据库，获取页面所需要的所有数据
 		Map<String, Object> dashboardMap = xxlJobService.dashboardInfo();
 		model.addAllAttributes(dashboardMap);
-
 		return "index";
 	}
 
+	/**
+	 * <h2>获取调度报表</h2>
+	 */
     @RequestMapping("/chartInfo")
 	@ResponseBody
 	public ReturnT<Map<String, Object>> chartInfo(Date startDate, Date endDate) {
         ReturnT<Map<String, Object>> chartInfo = xxlJobService.chartInfo(startDate, endDate);
         return chartInfo;
     }
-	
+
+	/**
+	 * <h2>跳转登录页面</h2>
+	 */
 	@RequestMapping("/toLogin")
 	@PermissionLimit(limit=false)
 	public ModelAndView toLogin(HttpServletRequest request, HttpServletResponse response,ModelAndView modelAndView) {
@@ -60,7 +68,10 @@ public class IndexController {
 		}
 		return new ModelAndView("login");
 	}
-	
+
+	/**
+	 * <h2>登录</h2>
+	 */
 	@RequestMapping(value="login", method=RequestMethod.POST)
 	@ResponseBody
 	@PermissionLimit(limit=false)
@@ -68,14 +79,17 @@ public class IndexController {
 		boolean ifRem = (ifRemember!=null && ifRemember.trim().length()>0 && "on".equals(ifRemember))?true:false;
 		return loginService.login(request, response, userName, password, ifRem);
 	}
-	
+
+	/**
+	 * <h2>退出登录</h2>
+	 */
 	@RequestMapping(value="logout", method=RequestMethod.POST)
 	@ResponseBody
 	@PermissionLimit(limit=false)
 	public ReturnT<String> logout(HttpServletRequest request, HttpServletResponse response){
 		return loginService.logout(request, response);
 	}
-	
+
 	@RequestMapping("/help")
 	public String help() {
 
@@ -86,6 +100,9 @@ public class IndexController {
 		return "help";
 	}
 
+	/**
+	 * <h2>注册一个绑定器初始化方法，方法只对本控制器有效</h2>
+	 */
 	@InitBinder
 	public void initBinder(WebDataBinder binder) {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

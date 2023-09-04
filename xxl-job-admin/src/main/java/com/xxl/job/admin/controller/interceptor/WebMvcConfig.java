@@ -7,7 +7,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import javax.annotation.Resource;
 
 /**
- * web mvc config
+ * <h1>拦截器配置</h1>
  *
  * @author xuxueli 2018-04-02 20:48:20
  */

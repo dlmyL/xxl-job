@@ -20,7 +20,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 /**
- * job group controller
+ * <h1>这个类对应的是执行器管理那个界面</h1>
+ *
  * @author xuxueli 2016-10-02 20:52:56
  */
 @Controller
@@ -40,6 +41,9 @@ public class JobGroupController {
 		return "jobgroup/jobgroup.index";
 	}
 
+	/**
+	 * <h2>分页查询执行器</h2>
+	 */
 	@RequestMapping("/pageList")
 	@ResponseBody
 	@PermissionLimit(adminuser = true)
@@ -47,7 +51,6 @@ public class JobGroupController {
 										@RequestParam(required = false, defaultValue = "0") int start,
 										@RequestParam(required = false, defaultValue = "10") int length,
 										String appname, String title) {
-
 		// page query
 		List<XxlJobGroup> list = xxlJobGroupDao.pageList(start, length, appname, title);
 		int list_count = xxlJobGroupDao.pageListCount(start, length, appname, title);
@@ -60,6 +63,9 @@ public class JobGroupController {
 		return maps;
 	}
 
+	/**
+	 * <h2>新增一个执行器方法</h2>
+	 */
 	@RequestMapping("/save")
 	@ResponseBody
 	@PermissionLimit(adminuser = true)
@@ -104,6 +110,9 @@ public class JobGroupController {
 		return (ret>0)?ReturnT.SUCCESS:ReturnT.FAIL;
 	}
 
+	/**
+	 * <h2>更新执行器方法</h2>
+	 */
 	@RequestMapping("/update")
 	@ResponseBody
 	@PermissionLimit(adminuser = true)
@@ -151,6 +160,9 @@ public class JobGroupController {
 		return (ret>0)?ReturnT.SUCCESS:ReturnT.FAIL;
 	}
 
+	/**
+	 * <h3>根据执行器名称，也就是 appName 来查询执行器</h3>
+	 */
 	private List<String> findRegistryByAppName(String appnameParam){
 		HashMap<String, List<String>> appAddressMap = new HashMap<String, List<String>>();
 		List<XxlJobRegistry> list = xxlJobRegistryDao.findAll(RegistryConfig.DEAD_TIMEOUT, new Date());
@@ -173,6 +185,9 @@ public class JobGroupController {
 		return appAddressMap.get(appnameParam);
 	}
 
+	/**
+	 * <h2>根据 ID 删除执行器</h2>
+	 */
 	@RequestMapping("/remove")
 	@ResponseBody
 	@PermissionLimit(adminuser = true)
@@ -193,6 +208,9 @@ public class JobGroupController {
 		return (ret>0)?ReturnT.SUCCESS:ReturnT.FAIL;
 	}
 
+	/**
+	 * <h2>根据 ID 查找执行器</h2>
+	 */
 	@RequestMapping("/loadById")
 	@ResponseBody
 	@PermissionLimit(adminuser = true)

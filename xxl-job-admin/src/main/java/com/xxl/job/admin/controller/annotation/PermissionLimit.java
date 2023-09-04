@@ -7,7 +7,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 权限限制
+ * <h1>权限注解</h1>
+ *
  * @author xuxueli 2015-12-12 18:29:02
  */
 @Target(ElementType.METHOD)

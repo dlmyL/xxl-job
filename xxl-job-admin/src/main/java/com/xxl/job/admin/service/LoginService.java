@@ -15,22 +15,35 @@ import javax.servlet.http.HttpServletResponse;
 import java.math.BigInteger;
 
 /**
+ * <h1>用户登录核心业务</h1>
+ *
  * @author xuxueli 2019-05-04 22:13:264
  */
 @Configuration
 public class LoginService {
 
+    /**
+     * 用户登录身份
+     */
     public static final String LOGIN_IDENTITY_KEY = "XXL_JOB_LOGIN_IDENTITY";
 
     @Resource
     private XxlJobUserDao xxlJobUserDao;
 
-
+    /**
+     * <h2>生成 TOKEN</h2>
+     */
     private String makeToken(XxlJobUser xxlJobUser){
+        // 把用户个人信息转换为字符创
         String tokenJson = JacksonUtil.writeValueAsString(xxlJobUser);
+        // 把当前字符串转换成 16 进制的字符串
         String tokenHex = new BigInteger(tokenJson.getBytes()).toString(16);
         return tokenHex;
     }
+
+    /**
+     * <h2>解析 TOKEN</h2>
+     */
     private XxlJobUser parseToken(String tokenHex){
         XxlJobUser xxlJobUser = null;
         if (tokenHex != null) {
@@ -40,7 +53,9 @@ public class LoginService {
         return xxlJobUser;
     }
 
-
+    /**
+     * <h2>登录逻辑</h2>
+     */
     public ReturnT<String> login(HttpServletRequest request, HttpServletResponse response, String username, String password, boolean ifRemember){
 
         // param
@@ -66,10 +81,7 @@ public class LoginService {
     }
 
     /**
-     * logout
-     *
-     * @param request
-     * @param response
+     * <h2>登出</h2>
      */
     public ReturnT<String> logout(HttpServletRequest request, HttpServletResponse response){
         CookieUtil.remove(request, response, LOGIN_IDENTITY_KEY);
@@ -77,10 +89,7 @@ public class LoginService {
     }
 
     /**
-     * logout
-     *
-     * @param request
-     * @return
+     * <h2>是否登录</h2>
      */
     public XxlJobUser ifLogin(HttpServletRequest request, HttpServletResponse response){
         String cookieToken = CookieUtil.getValue(request, LOGIN_IDENTITY_KEY);

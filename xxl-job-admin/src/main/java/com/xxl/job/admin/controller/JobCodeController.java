@@ -18,7 +18,8 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * job code controller
+ * <h1>如果定时任务是 glue 模式，那就需要在前端页面编写代码，这个类就是负责在线编辑定时任务的查找和保存</h1>
+ *
  * @author xuxueli 2015-12-19 16:13:16
  */
 @Controller

@@ -24,7 +24,8 @@ import java.text.MessageFormat;
 import java.util.*;
 
 /**
- * core job action for xxl-job
+ * <h1>操纵定时任务的核心逻辑，都在这个类里面</h1>
+ *
  * @author xuxueli 2016-5-28 15:30:33
  */
 @Service

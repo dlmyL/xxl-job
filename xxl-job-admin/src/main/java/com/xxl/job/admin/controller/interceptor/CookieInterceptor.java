@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 
 /**
- * push cookies to model as cookieMap
+ * <h1>Cookie 拦截器</h1>
  *
  * @author xuxueli 2015-12-12 18:09:04
  */
@@ -34,6 +34,7 @@ public class CookieInterceptor implements AsyncHandlerInterceptor {
 
 		// static method
 		if (modelAndView != null) {
+			// 把国际化工具类存入freemarker的模板信息中
 			modelAndView.addObject("I18nUtil", FtlUtil.generateStaticModel(I18nUtil.class.getName()));
 		}
 
