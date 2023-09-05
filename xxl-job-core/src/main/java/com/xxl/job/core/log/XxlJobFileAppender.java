@@ -9,14 +9,16 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * store trigger log in each log-file
+ * <h1>该类是操作日志的类，对日志文件进行操作的功能全部封装在这里</h1>
+ *
  * @author xuxueli 2016-3-12 19:25:12
  */
 public class XxlJobFileAppender {
 	private static Logger logger = LoggerFactory.getLogger(XxlJobFileAppender.class);
 
 	/**
-	 * log base path
+	 * 默认的日志存储路径，但是在执行器启动的时候，该路径会被用户在
+	 * 配置文件中设置的路径取代
 	 *
 	 * strut like:
 	 * 	---/
@@ -29,7 +31,14 @@ public class XxlJobFileAppender {
 	 *
 	 */
 	private static String logBasePath = "/data/applogs/xxl-job/jobhandler";
+	/**
+	 * 在 Web 端在线编辑代码，执行定时任务的时候，用这个路径把用户编辑的代码记录下来
+	 */
 	private static String glueSrcPath = logBasePath.concat("/gluesource");
+
+	/**
+	 * <h2>初始化存储日志文件路径</h2>
+	 */
 	public static void initLogPath(String logPath){
 		// init
 		if (logPath!=null && logPath.trim().length()>0) {
@@ -57,11 +66,10 @@ public class XxlJobFileAppender {
 	}
 
 	/**
-	 * log filename, like "logPath/yyyy-MM-dd/9999.log"
-	 *
-	 * @param triggerDate
-	 * @param logId
-	 * @return
+	 * <h2>
+	 *     根据定时任务的触发时间和其对应的日志id创造一个文件名，这个日志id是在调度中心就创建好的
+	 * 	   通过触发器参数传递给执行器的
+	 * </h2>
 	 */
 	public static String makeLogFileName(Date triggerDate, long logId) {
 
@@ -81,10 +89,7 @@ public class XxlJobFileAppender {
 	}
 
 	/**
-	 * append log
-	 *
-	 * @param logFileName
-	 * @param appendLog
+	 * <h2>把日志记录到本地的日志文件中</h2>
 	 */
 	public static void appendLog(String logFileName, String appendLog) {
 
@@ -130,10 +135,7 @@ public class XxlJobFileAppender {
 	}
 
 	/**
-	 * support read log-file
-	 *
-	 * @param logFileName
-	 * @return log content
+	 * <h2>读取本地的日志文件内容</h2>
 	 */
 	public static LogResult readLog(String logFileName, int fromLineNum){
 
@@ -187,9 +189,7 @@ public class XxlJobFileAppender {
 	}
 
 	/**
-	 * read log data
-	 * @param logFile
-	 * @return log line content
+	 * <h2>读取本地的日志文件内容，一行一行的读</h2>
 	 */
 	public static String readLines(File logFile){
 		BufferedReader reader = null;

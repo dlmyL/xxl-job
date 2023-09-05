@@ -13,7 +13,7 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 /**
- * job file clean thread
+ * <h1>Job 日志清除线程</h1>
  *
  * @author xuxueli 2017-12-29 16:23:43
  */
@@ -25,11 +25,21 @@ public class JobLogFileCleanThread {
         return instance;
     }
 
+    /**
+     * 工作线程
+     */
     private Thread localThread;
+    /**
+     * 判断线程是否停止工作
+     */
     private volatile boolean toStop = false;
-    public void start(final long logRetentionDays){
 
-        // limit min value
+    /**
+     * <h2>启动该组件的方法</h2>
+     */
+    public void start(final long logRetentionDays){
+        // logRetentionDays 为用户在配置文件设定的日志过期时间
+        // 这里有个判断，如果日志过期时间少于 3 天就直接退出
         if (logRetentionDays < 3 ) {
             return;
         }
@@ -39,11 +49,11 @@ public class JobLogFileCleanThread {
             public void run() {
                 while (!toStop) {
                     try {
-                        // clean log dir, over logRetentionDays
+                        // 得到该路径下的所有日志文件
                         File[] childDirs = new File(XxlJobFileAppender.getLogPath()).listFiles();
+                        // 判断日志文件数组非空
                         if (childDirs!=null && childDirs.length>0) {
-
-                            // today
+                            // 得到当前时间
                             Calendar todayCal = Calendar.getInstance();
                             todayCal.set(Calendar.HOUR_OF_DAY,0);
                             todayCal.set(Calendar.MINUTE,0);
@@ -52,20 +62,23 @@ public class JobLogFileCleanThread {
 
                             Date todayDate = todayCal.getTime();
 
+                            // 遍历日志文件
                             for (File childFile: childDirs) {
-
-                                // valid
+                                // 如果不是文件夹就跳过这次循环，因为现在找到的都是文件夹，文件夹的名称是定时任务执行的年月日时间
+                                // 比如，2023-09-05，2023-10-02等等，每个时间都是一个文件夹，文件夹中有很多个日志文件，文件名称就是定时任务的 ID
                                 if (!childFile.isDirectory()) {
                                     continue;
                                 }
+                                // 判断文件夹中是否有-符号，如果没有则跳过这个文件夹
                                 if (childFile.getName().indexOf("-") == -1) {
                                     continue;
                                 }
 
-                                // file create date
+                                // 该变量就用来记录日志文件的创建时间，其实就是文件夹的名字
                                 Date logFileCreateDate = null;
                                 try {
                                     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                                    // 得到创建时间
                                     logFileCreateDate = simpleDateFormat.parse(childFile.getName());
                                 } catch (ParseException e) {
                                     logger.error(e.getMessage(), e);
@@ -73,8 +86,9 @@ public class JobLogFileCleanThread {
                                 if (logFileCreateDate == null) {
                                     continue;
                                 }
-
+                                // 计算刚才得到的今天的零点时间减去日志文件创建的时间是否大于了用户设定的日志过期时间
                                 if ((todayDate.getTime()-logFileCreateDate.getTime()) >= logRetentionDays * (24 * 60 * 60 * 1000) ) {
+                                    // 如果超过了就把过期的日志删除了
                                     FileUtil.deleteRecursively(childFile);
                                 }
 

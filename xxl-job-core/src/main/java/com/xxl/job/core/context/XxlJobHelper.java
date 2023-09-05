@@ -12,7 +12,7 @@ import java.io.StringWriter;
 import java.util.Date;
 
 /**
- * helper for xxl-job
+ * <h1>这个类的功能就是对执行器产生的数据进行处理</h1>
  *
  * @author xuxueli 2020-11-05
  */
@@ -21,9 +21,7 @@ public class XxlJobHelper {
     // ---------------------- base info ----------------------
 
     /**
-     * current JobId
-     *
-     * @return
+     * <h2>获取定时任务的 ID</h2>
      */
     public static long getJobId() {
         XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
@@ -35,9 +33,7 @@ public class XxlJobHelper {
     }
 
     /**
-     * current JobParam
-     *
-     * @return
+     * <h2>获取定时任务的执行参数</h2>
      */
     public static String getJobParam() {
         XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
@@ -51,9 +47,7 @@ public class XxlJobHelper {
     // ---------------------- for log ----------------------
 
     /**
-     * current JobLogFileName
-     *
-     * @return
+     * <h2>获取定时任务的日志记录的文件名称</h2>
      */
     public static String getJobLogFileName() {
         XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
@@ -99,68 +93,54 @@ public class XxlJobHelper {
     private static Logger logger = LoggerFactory.getLogger("xxl-job logger");
 
     /**
-     * append log with pattern
-     *
-     * @param appendLogPattern  like "aaa {} bbb {} ccc"
-     * @param appendLogArguments    like "111, true"
+     * <h2>存储定时任务日志的入口方法</h2>
      */
     public static boolean log(String appendLogPattern, Object ... appendLogArguments) {
-
+        // 格式化要记录的日志信息
         FormattingTuple ft = MessageFormatter.arrayFormat(appendLogPattern, appendLogArguments);
         String appendLog = ft.getMessage();
-
-        /*appendLog = appendLogPattern;
-        if (appendLogArguments!=null && appendLogArguments.length>0) {
-            appendLog = MessageFormat.format(appendLogPattern, appendLogArguments);
-        }*/
-
+        // 从栈帧中获得方法的调用信息
         StackTraceElement callInfo = new Throwable().getStackTrace()[1];
+        // 在这里开始存储日志，但这里实际上只是个入口方法，真正的操作还是会进一步调用 XxlJobFileAppender 类的方法来完成的
         return logDetail(callInfo, appendLog);
     }
 
     /**
-     * append exception stack
-     *
-     * @param e
+     * <h2>把定时任务调用过程中遇到的异常记录到日志文件中</h2>
      */
     public static boolean log(Throwable e) {
-
         StringWriter stringWriter = new StringWriter();
         e.printStackTrace(new PrintWriter(stringWriter));
         String appendLog = stringWriter.toString();
-
         StackTraceElement callInfo = new Throwable().getStackTrace()[1];
         return logDetail(callInfo, appendLog);
     }
 
     /**
-     * append log
-     *
-     * @param callInfo
-     * @param appendLog
+     * <h2>把定时任务的日志存储到日志文件中的方法</h2>
      */
     private static boolean logDetail(StackTraceElement callInfo, String appendLog) {
+        // 从当前线程中获得定时任务上下文对象
         XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
         if (xxlJobContext == null) {
             return false;
         }
 
-        /*// "yyyy-MM-dd HH:mm:ss [ClassName]-[MethodName]-[LineNumber]-[ThreadName] log";
-        StackTraceElement[] stackTraceElements = new Throwable().getStackTrace();
-        StackTraceElement callInfo = stackTraceElements[1];*/
-
         StringBuffer stringBuffer = new StringBuffer();
+        // 在这里把方法调用的详细信息拼接一下
         stringBuffer.append(DateUtil.formatDateTime(new Date())).append(" ")
                 .append("["+ callInfo.getClassName() + "#" + callInfo.getMethodName() +"]").append("-")
                 .append("["+ callInfo.getLineNumber() +"]").append("-")
                 .append("["+ Thread.currentThread().getName() +"]").append(" ")
                 .append(appendLog!=null?appendLog:"");
+        // 转换成字符串
         String formatAppendLog = stringBuffer.toString();
 
-        // appendlog
+        // 获取定时任务对应的日志存储路径
         String logFileName = xxlJobContext.getJobLogFileName();
 
         if (logFileName!=null && logFileName.trim().length()>0) {
+            // 真正存储日志的方法，在这里就把日志存储到本地文件了
             XxlJobFileAppender.appendLog(logFileName, formatAppendLog);
             return true;
         } else {
@@ -170,6 +150,8 @@ public class XxlJobHelper {
     }
 
     // ---------------------- tool for handleResult ----------------------
+
+    // 下面这几个方法作用都相同，都是把定时任务执行的结果信息保存到定时任务上下文对象中
 
     /**
      * handle success

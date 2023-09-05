@@ -13,17 +13,17 @@ import java.lang.annotation.*;
 public @interface XxlJob {
 
     /**
-     * jobhandler name
+     * 定时任务的名称
      */
     String value();
 
     /**
-     * init handler, invoked when JobThread init
+     * 初始化方法
      */
     String init() default "";
 
     /**
-     * destroy handler, invoked when JobThread destroy
+     * 销毁方法
      */
     String destroy() default "";
 

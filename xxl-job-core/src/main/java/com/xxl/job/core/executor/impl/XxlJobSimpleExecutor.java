@@ -2,18 +2,15 @@ package com.xxl.job.core.executor.impl;
 
 import com.xxl.job.core.executor.XxlJobExecutor;
 import com.xxl.job.core.handler.annotation.XxlJob;
-import com.xxl.job.core.handler.impl.MethodJobHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
 
 /**
- * xxl-job executor (for frameless)
+ * <h1>不依赖于 SpringBoot 的执行器</h1>
  *
  * @author xuxueli 2020-11-05
  */

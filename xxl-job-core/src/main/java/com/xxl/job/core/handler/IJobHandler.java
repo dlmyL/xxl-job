@@ -1,7 +1,7 @@
 package com.xxl.job.core.handler;
 
 /**
- * job handler
+ * <h1>封装定时任务方法的接口</h1>
  *
  * @author xuxueli 2015-12-19 19:06:38
  */

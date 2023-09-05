@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * glue factory, product class/object by name
+ * <h1>运行模式工厂类</h1>
  *
  * @author xuxueli 2016-1-2 20:02:27
  */

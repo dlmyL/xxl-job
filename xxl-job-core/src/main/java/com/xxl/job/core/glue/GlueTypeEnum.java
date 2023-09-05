@@ -1,10 +1,15 @@
 package com.xxl.job.core.glue;
 
 /**
+ * <h1>运行模式枚举类</h1>
+ *
  * Created by xuxueli on 17/4/26.
  */
 public enum GlueTypeEnum {
 
+    /**
+     * 一般都是 BEAN 模式
+     */
     BEAN("BEAN", false, null, null),
     GLUE_GROOVY("GLUE(Java)", false, null, null),
     GLUE_SHELL("GLUE(Shell)", true, "bash", ".sh"),

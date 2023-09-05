@@ -1,13 +1,24 @@
 package com.xxl.job.core.enums;
 
 /**
+ * <h1>阻塞处理策略</h1>
+ *
  * Created by xuxueli on 17/5/9.
  */
 public enum ExecutorBlockStrategyEnum {
 
+    /**
+     * 串行
+     */
     SERIAL_EXECUTION("Serial execution"),
     /*CONCURRENT_EXECUTION("并行"),*/
+    /**
+     * 丢弃
+     */
     DISCARD_LATER("Discard Later"),
+    /**
+     * 覆盖
+     */
     COVER_EARLY("Cover Early");
 
     private String title;

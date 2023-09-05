@@ -17,30 +17,32 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import java.lang.reflect.Method;
 import java.util.Map;
 
-
 /**
- * xxl-job executor (for spring)
+ * <h1>这个类就是执行器服务开始执行的入口，该类的 afterSingletonsInstantiated 方法会在 IOC 容器中
+ * 的所有单例 BEAN 初始化后被回调，该类的对象会在用户自己创建的 XxlJobConfig 配置类中，被当做一个 Bean 对象被注入到IOC容器中</h1>
  *
  * @author xuxueli 2018-11-01 09:24:52
  */
 public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationContextAware, SmartInitializingSingleton, DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(XxlJobSpringExecutor.class);
 
-
-    // start
+    /**
+     * <h2>执行器启动的入口，在该方法内会把用户定义的定时任务，也就是 @XxlJob 注解的方法注册到 IJobHandler</h2>
+     */
     @Override
     public void afterSingletonsInstantiated() {
 
-        // init JobHandler Repository
-        /*initJobHandlerRepository(applicationContext);*/
-
-        // init JobHandler Repository (for method)
+        /*
+            该方法就会把用户定义的所有定时任务注册到 IJobHandler 中，这里的 applicationContext 是由
+            该类实现的 ApplicationContextAware 接口帮忙注入的，这所以需要它，是因为 ApplicationContextAware
+            可以得到所有初始化好的单例 BEAN
+         */
         initJobHandlerMethodRepository(applicationContext);
 
-        // refresh GlueFactory
+        // 创建 glue工厂，默认使用 Spring 模式的工厂
         GlueFactory.refreshInstance(1);
 
-        // super start
+        // 在这里调用父类的方法启动了执行器
         try {
             super.start();
         } catch (Exception e) {
@@ -48,44 +50,35 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
         }
     }
 
-    // destroy
+    /**
+     * <h2>
+     *     释放资源的方法，该方法会调用到父类的方法，在父类的方法中其实就是停止了执行器的 Netty 服务器，
+     *     停止了每一个工作的 JobThread 线程
+     * </h2>
+     */
     @Override
     public void destroy() {
         super.destroy();
     }
 
-
-    /*private void initJobHandlerRepository(ApplicationContext applicationContext) {
-        if (applicationContext == null) {
-            return;
-        }
-
-        // init job handler action
-        Map<String, Object> serviceBeanMap = applicationContext.getBeansWithAnnotation(JobHandler.class);
-
-        if (serviceBeanMap != null && serviceBeanMap.size() > 0) {
-            for (Object serviceBean : serviceBeanMap.values()) {
-                if (serviceBean instanceof IJobHandler) {
-                    String name = serviceBean.getClass().getAnnotation(JobHandler.class).value();
-                    IJobHandler handler = (IJobHandler) serviceBean;
-                    if (loadJobHandler(name) != null) {
-                        throw new RuntimeException("xxl-job jobhandler[" + name + "] naming conflicts.");
-                    }
-                    registJobHandler(name, handler);
-                }
-            }
-        }
-    }*/
-
+    /**
+     * <h3>
+     *     该方法会把用户定义的所有定时任务注册到 IJobHandler 对象中，其实是 MethodJobHandler 对象，
+     *     MethodJobHandler 对象是 IJobHandler 的子类
+     * </h3>
+     */
     private void initJobHandlerMethodRepository(ApplicationContext applicationContext) {
         if (applicationContext == null) {
             return;
         }
-        // init job handler from method
+        /*
+            获取 IOC 容器中所有初始化好的 BEAN 的名字，这里的后两个参数都为 boolean 类型
+                第一个决定查到的对象是否允许为非单例的，传入 false，意思为不获得非单例对象
+                第二个意思是查找的对象是否允许为延迟初始化的，就是LazyInit的意思，参数为true，就是允许的意思
+         */
         String[] beanDefinitionNames = applicationContext.getBeanNamesForType(Object.class, false, true);
         for (String beanDefinitionName : beanDefinitionNames) {
-
-            // get bean
+            // 根据名称获取每一个 BEAN
             Object bean = null;
             Lazy onBean = applicationContext.findAnnotationOnBean(beanDefinitionName, Lazy.class);
             if (onBean!=null){
@@ -95,35 +88,42 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
                 bean = applicationContext.getBean(beanDefinitionName);
             }
 
-            // filter method
-            Map<Method, XxlJob> annotatedMethods = null;   // referred to ：org.springframework.context.event.EventListenerMethodProcessor.processBean
+            // 这里定义的变量就是用来收集 BEAN 对象中添加了 @XxlJob 注解的方法了
+            Map<Method, XxlJob> annotatedMethods = null;
             try {
+                // 通过反射获取 BEAN 对象中添加了 @XxlJob 注解的方法
                 annotatedMethods = MethodIntrospector.selectMethods(bean.getClass(),
                         new MethodIntrospector.MetadataLookup<XxlJob>() {
                             @Override
                             public XxlJob inspect(Method method) {
+                                // 在这里检查方法是否添加了 @XxlJob 注解
                                 return AnnotatedElementUtils.findMergedAnnotation(method, XxlJob.class);
                             }
                         });
             } catch (Throwable ex) {
                 logger.error("xxl-job method-jobhandler resolve error for bean[" + beanDefinitionName + "].", ex);
             }
+            // 如果结果为空，说明该 BEAN 对象中没有方法添加了 @XxlJob 注解
             if (annotatedMethods==null || annotatedMethods.isEmpty()) {
                 continue;
             }
 
-            // generate and regist method job handler
+            // 遍历添加 @XxlJob 注解的方法
             for (Map.Entry<Method, XxlJob> methodXxlJobEntry : annotatedMethods.entrySet()) {
+                // 得到该方法
                 Method executeMethod = methodXxlJobEntry.getKey();
+                // 得到注解
                 XxlJob xxlJob = methodXxlJobEntry.getValue();
-                // regist
+                // 在这里将该方法注册到 JobHandler 的子类对象中，这个时候逻辑就会跑到父类了
                 registJobHandler(xxlJob, bean, executeMethod);
             }
 
         }
     }
 
+
     // ---------------------- applicationContext ----------------------
+
     private static ApplicationContext applicationContext;
 
     @Override
@@ -134,14 +134,5 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
     public static ApplicationContext getApplicationContext() {
         return applicationContext;
     }
-
-    /*
-    BeanDefinitionRegistryPostProcessor
-    registry.getBeanDefine()
-    @Override
-    public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
-        this.registry = registry;
-    }
-    * */
 
 }
