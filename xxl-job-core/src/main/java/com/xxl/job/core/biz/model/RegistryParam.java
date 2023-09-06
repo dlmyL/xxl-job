@@ -3,13 +3,24 @@ package com.xxl.job.core.biz.model;
 import java.io.Serializable;
 
 /**
+ * <h1>注册执行器到调度中心时发送的注册参数</h1>
+ *
  * Created by xuxueli on 2017-05-10 20:22:42
  */
 public class RegistryParam implements Serializable {
     private static final long serialVersionUID = 42L;
 
+    /**
+     * 注册方式
+     */
     private String registryGroup;
+    /**
+     * 执行器的注册名称
+     */
     private String registryKey;
+    /**
+     * 执行器的地址
+     */
     private String registryValue;
 
     public RegistryParam(){}

@@ -3,7 +3,8 @@ package com.xxl.job.core.biz.model;
 import java.io.Serializable;
 
 /**
- * common return
+ * <h1>返回信息的实体类，调度中心和执行器都会用到</h1>
+ *
  * @author xuxueli 2015-12-4 16:32:31
  * @param <T>
  */

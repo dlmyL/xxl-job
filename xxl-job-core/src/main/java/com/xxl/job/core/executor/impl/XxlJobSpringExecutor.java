@@ -39,7 +39,7 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
          */
         initJobHandlerMethodRepository(applicationContext);
 
-        // 创建 glue工厂，默认使用 Spring 模式的工厂
+        // 创建 glue 工厂，默认使用 Spring 模式的工厂
         GlueFactory.refreshInstance(1);
 
         // 在这里调用父类的方法启动了执行器

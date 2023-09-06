@@ -4,7 +4,13 @@ import com.xxl.job.core.biz.model.ReturnT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.*;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
@@ -12,17 +18,19 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Map;
 
 /**
+ * <h1>用于执行远程调用的工具类</h1>
+ *
  * @author xuxueli 2018-11-25 00:55:31
  */
 public class XxlJobRemotingUtil {
     private static Logger logger = LoggerFactory.getLogger(XxlJobRemotingUtil.class);
     public static final String XXL_JOB_ACCESS_TOKEN = "XXL-JOB-ACCESS-TOKEN";
 
-
-    // trust-https start
+    /**
+     * <h2>信任该 HTTP 链接</h2>
+     */
     private static void trustAllHosts(HttpsURLConnection connection) {
         try {
             SSLContext sc = SSLContext.getInstance("TLS");
@@ -56,31 +64,22 @@ public class XxlJobRemotingUtil {
 
 
     /**
-     * post
-     *
-     * @param url
-     * @param accessToken
-     * @param timeout
-     * @param requestObj
-     * @param returnTargClassOfT
-     * @return
+     * <h2>发送 POST 请求</h2>
      */
     public static ReturnT postBody(String url, String accessToken, int timeout, Object requestObj, Class returnTargClassOfT) {
         HttpURLConnection connection = null;
         BufferedReader bufferedReader = null;
         try {
-            // connection
+            // 创建连接
             URL realUrl = new URL(url);
             connection = (HttpURLConnection) realUrl.openConnection();
-
-            // trust-https
+            // 判断是否为 https 开头的
             boolean useHttps = url.startsWith("https");
             if (useHttps) {
                 HttpsURLConnection https = (HttpsURLConnection) connection;
                 trustAllHosts(https);
             }
-
-            // connection setting
+            // Connection 对象赋值
             connection.setRequestMethod("POST");
             connection.setDoOutput(true);
             connection.setDoInput(true);
@@ -90,48 +89,46 @@ public class XxlJobRemotingUtil {
             connection.setRequestProperty("connection", "Keep-Alive");
             connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
             connection.setRequestProperty("Accept-Charset", "application/json;charset=UTF-8");
-
+            // 判断 TOKEN 是否为空
             if(accessToken!=null && accessToken.trim().length()>0){
+                // 设置令牌，以键值对的形式，键就是该类的静态成员变量
                 connection.setRequestProperty(XXL_JOB_ACCESS_TOKEN, accessToken);
             }
-
-            // do connection
+            // 进行连接
             connection.connect();
 
             // write requestBody
             if (requestObj != null) {
+                // 序列化请求实体，也就是要发送的触发器参数
                 String requestBody = GsonTool.toJson(requestObj);
-
+                // 下面就开始正式发送消息了
                 DataOutputStream dataOutputStream = new DataOutputStream(connection.getOutputStream());
                 dataOutputStream.write(requestBody.getBytes("UTF-8"));
+                // 刷新缓冲区
                 dataOutputStream.flush();
+                // 释放资源
                 dataOutputStream.close();
             }
 
-            /*byte[] requestBodyBytes = requestBody.getBytes("UTF-8");
-            connection.setRequestProperty("Content-Length", String.valueOf(requestBodyBytes.length));
-            OutputStream outwritestream = connection.getOutputStream();
-            outwritestream.write(requestBodyBytes);
-            outwritestream.flush();
-            outwritestream.close();*/
-
-            // valid StatusCode
+            // 获取响应码
             int statusCode = connection.getResponseCode();
             if (statusCode != 200) {
+                // 设置失败结果
                 return new ReturnT<String>(ReturnT.FAIL_CODE, "xxl-job remoting fail, StatusCode("+ statusCode +") invalid. for url : " + url);
             }
 
-            // result
+            // 接收返回信息
             bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
             StringBuilder result = new StringBuilder();
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 result.append(line);
             }
+            // 转换为字符串
             String resultJson = result.toString();
 
-            // parse returnT
             try {
+                // 转换为 ReturnT 对象，返回给用户
                 ReturnT returnT = GsonTool.fromJson(resultJson, ReturnT.class, returnTargClassOfT);
                 return returnT;
             } catch (Exception e) {

@@ -3,6 +3,8 @@ package com.xxl.job.core.biz;
 import com.xxl.job.core.biz.model.*;
 
 /**
+ * <h1>用于远程调用的客户端接口</h1>
+ *
  * Created by xuxueli on 17/3/1.
  */
 public interface ExecutorBiz {

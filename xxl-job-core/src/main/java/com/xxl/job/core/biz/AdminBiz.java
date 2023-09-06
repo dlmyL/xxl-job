@@ -7,6 +7,8 @@ import com.xxl.job.core.biz.model.ReturnT;
 import java.util.List;
 
 /**
+ * <h1>程序内部使用的接口，该接口是调度中心暴露给执行器那一端的</h1>
+ *
  * @author xuxueli 2017-07-27 21:52:49
  */
 public interface AdminBiz {
@@ -15,10 +17,7 @@ public interface AdminBiz {
     // ---------------------- callback ----------------------
 
     /**
-     * callback
-     *
-     * @param callbackParamList
-     * @return
+     * <h2>回调定时任务的执行信息给调度中心的方法</h2>
      */
     public ReturnT<String> callback(List<HandleCallbackParam> callbackParamList);
 
@@ -26,18 +25,12 @@ public interface AdminBiz {
     // ---------------------- registry ----------------------
 
     /**
-     * registry
-     *
-     * @param registryParam
-     * @return
+     * <h2>执行器注册自己到调度中心的方法</h2>
      */
     public ReturnT<String> registry(RegistryParam registryParam);
 
     /**
-     * registry remove
-     *
-     * @param registryParam
-     * @return
+     * <h2>执行器将自己从调度中心移除的方法</h2>
      */
     public ReturnT<String> registryRemove(RegistryParam registryParam);
 
