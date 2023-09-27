@@ -95,7 +95,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
                     经过上面的赋值，走到这里如果 jobHandler 仍然为 null，那么只有一个原因，就是执行器这一端根本就没有
                     对应的定时任务，通过执行器的名字根本从 jobHandlerRepository 这个 Map 中找不到要被执行的定时任务
                      */
-                    return new ReturnT<String>(ReturnT.FAIL_CODE, "job handler [" + triggerParam.getExecutorHandler() + "] not found.");
+                    return new ReturnT<>(ReturnT.FAIL_CODE, "job handler [" + triggerParam.getExecutorHandler() + "] not found.");
                 }
             }
 

@@ -19,7 +19,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * job alarm by email
+ * <h1>发送报警邮件的实现类</h1>
  *
  * @author xuxueli 2020-01-19
  */
@@ -28,18 +28,14 @@ public class EmailJobAlarm implements JobAlarm {
     private static Logger logger = LoggerFactory.getLogger(EmailJobAlarm.class);
 
     /**
-     * fail alarm
-     *
-     * @param jobLog
+     * <h2>真正发送报警邮件的逻辑</h2>
      */
     @Override
     public boolean doAlarm(XxlJobInfo info, XxlJobLog jobLog){
         boolean alarmResult = true;
-
-        // send monitor email
+        // 做一些参数校验
         if (info!=null && info.getAlarmEmail()!=null && info.getAlarmEmail().trim().length()>0) {
-
-            // alarmContent
+            // 得到报警的定时任务 ID
             String alarmContent = "Alarm Job LogId=" + jobLog.getId();
             if (jobLog.getTriggerCode() != ReturnT.SUCCESS_CODE) {
                 alarmContent += "<br>TriggerMsg=<br>" + jobLog.getTriggerMsg();
@@ -48,46 +44,44 @@ public class EmailJobAlarm implements JobAlarm {
                 alarmContent += "<br>HandleCode=" + jobLog.getHandleMsg();
             }
 
-            // email info
+            // 得到执行器组
             XxlJobGroup group = XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().load(Integer.valueOf(info.getJobGroup()));
+            // 设置报警信息的发送者，I18nUtil 的配置文件中可以查看
             String personal = I18nUtil.getString("admin_name_full");
+            // 设置报警信息的标题
             String title = I18nUtil.getString("jobconf_monitor");
+            // 向模板中填充具体内容
             String content = MessageFormat.format(loadEmailJobAlarmTemplate(),
                     group!=null?group.getTitle():"null",
                     info.getId(),
                     info.getJobDesc(),
                     alarmContent);
-
+            // 也许设置了多个邮件地址，所以这里转化为集合
             Set<String> emailSet = new HashSet<String>(Arrays.asList(info.getAlarmEmail().split(",")));
+            // 遍历地址，然后就是给每一个地址发送报警邮件
             for (String email: emailSet) {
-
-                // make mail
                 try {
                     MimeMessage mimeMessage = XxlJobAdminConfig.getAdminConfig().getMailSender().createMimeMessage();
-
                     MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
                     helper.setFrom(XxlJobAdminConfig.getAdminConfig().getEmailFrom(), personal);
                     helper.setTo(email);
                     helper.setSubject(title);
                     helper.setText(content, true);
-
+                    // 发送邮件
                     XxlJobAdminConfig.getAdminConfig().getMailSender().send(mimeMessage);
                 } catch (Exception e) {
                     logger.error(">>>>>>>>>>> xxl-job, job fail alarm email send error, JobLogId:{}", jobLog.getId(), e);
-
                     alarmResult = false;
                 }
 
             }
         }
-
+        // 返回发送结果
         return alarmResult;
     }
 
     /**
-     * load email job alarm template
-     *
-     * @return
+     * <h2>这个就是前端要用到的模板，源码这样写有点不适合</h2>
      */
     private static final String loadEmailJobAlarmTemplate(){
         String mailBodyTemplate = "<h5>" + I18nUtil.getString("jobconf_monitor_detail") + "：</span>" +
@@ -111,7 +105,6 @@ public class EmailJobAlarm implements JobAlarm {
                 "      </tr>\n" +
                 "   </tbody>\n" +
                 "</table>";
-
         return mailBodyTemplate;
     }
 

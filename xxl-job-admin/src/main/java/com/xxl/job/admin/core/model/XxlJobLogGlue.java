@@ -3,7 +3,8 @@ package com.xxl.job.admin.core.model;
 import java.util.Date;
 
 /**
- * xxl-job log for glue, used to track job code process
+ * <h1>glue 方式的定时任务日志</h1>
+ *
  * @author xuxueli 2016-5-19 17:57:46
  */
 public class XxlJobLogGlue {

@@ -25,10 +25,9 @@ import java.util.Date;
  *      到最后，任务还是在执行器那边执行的，但是该类会为远程调用做很多必要的辅助性工作，比如选择路由策略，
  *      然后选择要执行的执行器地址
  * </h1>
- *
- * Created by xuxueli on 17/7/13.
  */
 public class XxlJobTrigger {
+
     private static Logger logger = LoggerFactory.getLogger(XxlJobTrigger.class);
 
     /**
@@ -37,12 +36,9 @@ public class XxlJobTrigger {
      *     以及分片策略，在该方法内会对这些操作进行处理
      * </h2>
      */
-    public static void trigger(int jobId,
-                               TriggerTypeEnum triggerType,
-                               int failRetryCount,
-                               String executorShardingParam,
-                               String executorParam,
-                               String addressList) {
+    public static void trigger(int jobId, TriggerTypeEnum triggerType,
+                               int failRetryCount, String executorShardingParam,
+                               String executorParam, String addressList) {
         // 根据任务 ID 从数据库中查询到该任务的完整信息
         XxlJobInfo jobInfo = XxlJobAdminConfig.getAdminConfig().getXxlJobInfoDao().loadById(jobId);
         // 如果任务为 null，则打印一条警告信息后直接退出
@@ -250,7 +246,6 @@ public class XxlJobTrigger {
         jobLog.setTriggerMsg(triggerMsgSb.toString());
         // 更新数据库信息
         XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().updateTriggerInfo(jobLog);
-
         logger.debug(">>>>>>>>>>> xxl-job trigger end, jobId:{}", jobLog.getId());
     }
 
@@ -263,11 +258,12 @@ public class XxlJobTrigger {
             // 获取一个用于远程调用的客户端对象，一个地址就对应着一个客户端，为什么说是客户端，因为远程调用的时候，执行器
             // 成为了服务器，因为执行器需要接收来自于客户端的调用消息
             ExecutorBiz executorBiz = XxlJobScheduler.getExecutorBiz(address);
+            // KEYPOINT 真正执行远程调用的地方
             // 拿到客户端后，就在 run 方法内进行远程调用了
             runResult = executorBiz.run(triggerParam);
         } catch (Exception e) {
             logger.error(">>>>>>>>>>> xxl-job trigger error, please check if the executor[{}] is running.", address, e);
-            runResult = new ReturnT<String>(ReturnT.FAIL_CODE, ThrowableUtil.toString(e));
+            runResult = new ReturnT<>(ReturnT.FAIL_CODE, ThrowableUtil.toString(e));
         }
 
         // 在这里拼接一下远程调用返回的状态码和消息

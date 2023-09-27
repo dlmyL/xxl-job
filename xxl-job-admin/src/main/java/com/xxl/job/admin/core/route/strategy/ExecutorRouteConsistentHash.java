@@ -12,6 +12,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
+ * <h1>哈希一致性路由策略</h1>
  * 分组下机器地址相同，不同JOB均匀散列在不同机器上，保证分组下机器分配JOB平均；且每个JOB固定调度其中一台机器；
  *      a、virtual node：解决不均衡问题
  *      b、hash method replace hashCode：String的hashCode可能重复，需要进一步扩大hashCode的取值范围
@@ -19,15 +20,15 @@ import java.util.TreeMap;
  */
 public class ExecutorRouteConsistentHash extends ExecutorRouter {
 
+    /**
+     * 哈希环上存储的地址容量限制
+     */
     private static int VIRTUAL_NODE_NUM = 100;
 
     /**
-     * get hash code on 2^32 ring (md5散列的方式计算hash值)
-     * @param key
-     * @return
+     * <h2>MD5 散列的方式计算 hash 值</h2>
      */
     private static long hash(String key) {
-
         // md5 byte
         MessageDigest md5;
         try {
@@ -56,6 +57,12 @@ public class ExecutorRouteConsistentHash extends ExecutorRouter {
         return truncateHashCode;
     }
 
+    /**
+     * <h2>这个方法的整体逻辑很简单，就是先计算每一个执行器地址的 hash 值，然后再计算定时任务 ID
+     * 的 hash 值，然后将定时任务的哈希值和执行器地址的哈希值做对比，获得距离定时任务 ID 哈希值
+     * 最近的那个执行器地址就行了，当然，这里要稍微形象一点，定时任务的哈希值构成了一个圆环，按照
+     * 顺时针的方向，找到里面定时任务 ID 的哈希值最近的那个哈希值即可，这里用到了 TreeMap 结构</h2>
+     */
     public String hashJob(int jobId, List<String> addressList) {
 
         // ------A1------A2-------A3------
@@ -63,16 +70,23 @@ public class ExecutorRouteConsistentHash extends ExecutorRouter {
         TreeMap<Long, String> addressRing = new TreeMap<Long, String>();
         for (String address: addressList) {
             for (int i = 0; i < VIRTUAL_NODE_NUM; i++) {
+                // 计算执行器地址的哈希值
                 long addressHash = hash("SHARD-" + address + "-NODE-" + i);
+                // 把地址哈希值和地址放到 TreeMap 中
                 addressRing.put(addressHash, address);
             }
         }
-
+        // 计算定时任务 ID 的哈希值
         long jobHash = hash(String.valueOf(jobId));
+        // TreeMap 的 tailMap 方法在这里很重要，这个方法会让内部键值对的键跟 jobHash 做比较
+        // 比 jobHash 的值大的键，对应的键值对都会返回给用户
+        // 这里得到的 lastRing 就相当于圆环上所有比定时任务哈希值大的哈希值了
         SortedMap<Long, String> lastRing = addressRing.tailMap(jobHash);
         if (!lastRing.isEmpty()) {
+            // 如果不为空，取第一个值就行了，最接近定时任务哈希值就行
             return lastRing.get(lastRing.firstKey());
         }
+        // 如果为空，就从 addressRing 中获取第一个执行器地址即可
         return addressRing.firstEntry().getValue();
     }
 

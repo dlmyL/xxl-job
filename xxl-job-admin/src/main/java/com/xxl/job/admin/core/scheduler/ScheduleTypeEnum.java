@@ -3,19 +3,24 @@ package com.xxl.job.admin.core.scheduler;
 import com.xxl.job.admin.core.util.I18nUtil;
 
 /**
+ * <h1>定时任务的调度类型</h1>
+ *
  * @author xuxueli 2020-10-29 21:11:23
  */
 public enum ScheduleTypeEnum {
 
+    /**
+     * 不使用任何类型
+     */
     NONE(I18nUtil.getString("schedule_type_none")),
 
     /**
-     * schedule by cron
+     * 一般都是用 cron 表达式
      */
     CRON(I18nUtil.getString("schedule_type_cron")),
 
     /**
-     * schedule by fixed rate (in seconds)
+     * 按照固定频率
      */
     FIX_RATE(I18nUtil.getString("schedule_type_fix_rate")),
 

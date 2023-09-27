@@ -3,19 +3,19 @@ package com.xxl.job.admin.core.model;
 import java.util.Date;
 
 /**
- * xxl-job info
+ * <h1>定时任务的实体类，对应数据库中的【xxl-job-info】这张表</h1>
  *
  * @author xuxueli  2016-1-12 18:25:49
  */
 public class XxlJobInfo {
 	
-	private int id;				// 主键ID
+	private int id;				// 定时任务 ID
 	
-	private int jobGroup;		// 执行器主键ID
-	private String jobDesc;
-	
-	private Date addTime;
-	private Date updateTime;
+	private int jobGroup;		// 该定时任务所属的执行器组的 ID
+	private String jobDesc;		// 定时任务描述
+
+	private Date addTime;		// 定时任务添加的时间
+	private Date updateTime;	// 定时任务更新的时间
 	
 	private String author;		// 负责人
 	private String alarmEmail;	// 报警邮件

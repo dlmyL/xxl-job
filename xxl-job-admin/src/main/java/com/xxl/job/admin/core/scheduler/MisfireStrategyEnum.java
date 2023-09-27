@@ -3,17 +3,19 @@ package com.xxl.job.admin.core.scheduler;
 import com.xxl.job.admin.core.util.I18nUtil;
 
 /**
+ * <h1>定时任务调度失败策略</h1>
+ *
  * @author xuxueli 2020-10-29 21:11:23
  */
 public enum MisfireStrategyEnum {
 
     /**
-     * do nothing
+     * 默认什么也不做
      */
     DO_NOTHING(I18nUtil.getString("misfire_strategy_do_nothing")),
 
     /**
-     * fire once now
+     * 失败后重试一次
      */
     FIRE_ONCE_NOW(I18nUtil.getString("misfire_strategy_fire_once_now"));
 

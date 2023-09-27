@@ -3,6 +3,8 @@ package com.xxl.job.admin.core.model;
 import org.springframework.util.StringUtils;
 
 /**
+ * <h1>用户信息对应的实体类</h1>
+ *
  * @author xuxueli 2019-05-04 16:43:12
  */
 public class XxlJobUser {

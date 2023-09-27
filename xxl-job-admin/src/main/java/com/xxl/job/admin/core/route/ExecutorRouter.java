@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
+ * <h1>路由策略抽象类</h1>
+ *
  * Created by xuxueli on 17/3/10.
  */
 public abstract class ExecutorRouter {

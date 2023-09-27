@@ -15,10 +15,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     xxl-job 服务器的重点类，在这个类中初始化了两个线程池，一个快、一个慢，要被执行的任务会被包装成触发器任务，
  *     提交给这两个线程池中的一个，然后由线程池去执行触发器的任务，在任务中会进行远程调用
  * </h1>
- *
- * @author xuxueli 2018-07-03 21:08:07
  */
 public class JobTriggerPoolHelper {
+
     private static Logger logger = LoggerFactory.getLogger(JobTriggerPoolHelper.class);
 
 
@@ -34,26 +33,22 @@ public class JobTriggerPoolHelper {
          快线程池，如果任务耗时较长，就给慢线程池来执行
      */
 
-    /**
-     * 快线程池
-     */
+    // 快线程池
     private ThreadPoolExecutor fastTriggerPool = null;
-    /**
-     * 慢线程池
-     */
+    // 慢线程池
     private ThreadPoolExecutor slowTriggerPool = null;
 
     /**
      * <h2>在这里，创建了两个快慢线程池</h2>
      */
-    public void start(){
+    public void start() {
         // 快线程池，默认最大线程数为 200
         fastTriggerPool = new ThreadPoolExecutor(
                 10,
                 XxlJobAdminConfig.getAdminConfig().getTriggerPoolFastMax(),
                 60L,
                 TimeUnit.SECONDS,
-                new LinkedBlockingQueue<Runnable>(1000),
+                new LinkedBlockingQueue<>(1000),
                 new ThreadFactory() {
                     @Override
                     public Thread newThread(Runnable r) {
@@ -67,7 +62,7 @@ public class JobTriggerPoolHelper {
                 XxlJobAdminConfig.getAdminConfig().getTriggerPoolSlowMax(),
                 60L,
                 TimeUnit.SECONDS,
-                new LinkedBlockingQueue<Runnable>(2000),
+                new LinkedBlockingQueue<>(2000),
                 new ThreadFactory() {
                     @Override
                     public Thread newThread(Runnable r) {
@@ -86,10 +81,8 @@ public class JobTriggerPoolHelper {
     }
 
 
-    /**
-     * 获取当前的系统时间，这里计算出来的其实是系统当前的分钟数
-     */
-    private volatile long minTim = System.currentTimeMillis()/60000;
+    // 获取当前的系统时间，这里计算出来的其实是系统当前的分钟数，下面马上就会用到
+    private volatile long minTim = System.currentTimeMillis() / 60000;
     /**
      * 如果有任务出现慢执行情况了，就会被记录在该 Map 中
      * 所谓慢执行，就是执行的时间超过了 500ms，该 Map 的 key 为 job 的 id，value 为慢执行的次数
@@ -101,31 +94,27 @@ public class JobTriggerPoolHelper {
 
     /**
      * <h2>
-     *     这个方法就是远程调用的七点，很重要的入口方法，JobInfoController 中的 triggerJob 会调用到这里，
-     *     还有 JobScheduleHelper 类中也会调用到该方法。当然，在该方法外面还有一层 trigger 方法，这个方法
-     *     就在本类中，属于是该方法的外层方法
+     * 这个方法就是远程调用的起点，很重要的入口方法，JobInfoController 中的 triggerJob 会调用到这里，
+     * 还有 JobScheduleHelper 类中也会调用到该方法。当然，在该方法外面还有一层 trigger 方法，这个方法
+     * 就在本类中，属于是该方法的外层方法
      * </h2>
      *
-     * @param jobId 任务ID
-     * @param triggerType 任务触发的枚举类型（如 手动触发、手动调用该任务、执行一次）
-     * @param failRetryCount 失败重试次数
+     * @param jobId                 任务ID
+     * @param triggerType           任务触发的枚举类型（如 手动触发、手动调用该任务、执行一次）
+     * @param failRetryCount        失败重试次数
      * @param executorShardingParam 分片参数
-     * @param executorParam 执行器方法参数
-     * @param addressList 执行器的地址列表
+     * @param executorParam         执行器方法参数
+     * @param addressList           执行器的地址列表
      */
-    public void addTrigger(final int jobId,
-                           final TriggerTypeEnum triggerType,
-                           final int failRetryCount,
-                           final String executorShardingParam,
-                           final String executorParam,
-                           final String addressList) {
-
+    public void addTrigger(final int jobId, final TriggerTypeEnum triggerType,
+                           final int failRetryCount, final String executorShardingParam,
+                           final String executorParam, final String addressList) {
         // 默认使用快线程池
         ThreadPoolExecutor triggerPool_ = fastTriggerPool;
         // 用任务 ID 从慢执行 Map 中得到该 job 对应的慢执行次数
         AtomicInteger jobTimeoutCount = jobTimeoutCountMap.get(jobId);
         // 如果慢执行次数不为 null，并且一分钟超过了 10，就选用慢线程池来执行该任务
-        if (jobTimeoutCount!=null && jobTimeoutCount.get() > 10) {
+        if (jobTimeoutCount != null && jobTimeoutCount.get() > 10) {
             // 这里选用慢线程池了
             triggerPool_ = slowTriggerPool;
         }
@@ -140,12 +129,13 @@ public class JobTriggerPoolHelper {
                 try {
                     // KEYPOINT
                     // 触发器任务开始执行了，在该方法内部会进行远程调用
-                    XxlJobTrigger.trigger(jobId, triggerType, failRetryCount, executorShardingParam, executorParam, addressList);
+                    XxlJobTrigger.trigger(jobId, triggerType, failRetryCount,
+                            executorShardingParam, executorParam, addressList);
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 } finally {
                     // 这里再次获取当前的分钟数，这个分钟数会和刚才上面得到的那个分钟数做对比
-                    long minTim_now = System.currentTimeMillis()/60000;
+                    long minTim_now = System.currentTimeMillis() / 60000;
                     // 这里就用到了两个分钟数做对比，如果两个分钟数不等，说明过去了一分钟
                     // 而慢执行 Map 中的数据是一分钟清理一次，所以这里就把慢执行 Map 清空掉
                     // 【注意】这个清空的动作是线程池中的线程来执行的，并且这个动作是在 finally 代码块中执行的
@@ -156,7 +146,7 @@ public class JobTriggerPoolHelper {
                     }
 
                     // 在这里用当前毫秒值减去之前得到的毫秒值
-                    long cost = System.currentTimeMillis()-start;
+                    long cost = System.currentTimeMillis() - start;
                     // 判断任务执行时间是否超过 500ms
                     // 这里仍然要结合上面的 finally 代码块来理解，因为触发器任务执行完了才会执行 finally 代码块
                     // 中的代码，所以这个时候也就能用得到 job 的执行时间了
@@ -177,30 +167,37 @@ public class JobTriggerPoolHelper {
     }
 
 
-
     // ---------------------- helper ----------------------
 
+    /**
+     * 静态成员变量，说明该变量也只会初始化一次，并且根据修饰符来看，该成员变量也不会直接对外暴露
+     * 而是通过下面的两个方法间接在外部调用
+     */
     private static JobTriggerPoolHelper helper = new JobTriggerPoolHelper();
 
+    // 启动方法
     public static void toStart() {
         helper.start();
     }
+
+    // 停止方法
     public static void toStop() {
         helper.stop();
     }
 
     /**
-     * @param jobId
-     * @param triggerType
-     * @param failRetryCount
-     * 			>=0: use this param
-     * 			<0: use param from job info config
-     * @param executorShardingParam
-     * @param executorParam
-     *          null: use job param
-     *          not null: cover job param
+     * 该方法会对外暴露，然后调用到该类内部的addTrigger方法，该方法的作用就是把要执行的job包装成一个触发器任务，
+     * 在触发器任务中进行远程调用，然后在执行器那一端执行该job
+     *
+     * @param jobId                 任务ID
+     * @param triggerType           任务触发的枚举类型（如 手动触发、手动调用该任务、执行一次）
+     * @param failRetryCount        失败重试次数
+     * @param executorShardingParam 分片参数
+     * @param executorParam         执行器方法参数
+     * @param addressList           执行器的地址列表
      */
-    public static void trigger(int jobId, TriggerTypeEnum triggerType, int failRetryCount, String executorShardingParam, String executorParam, String addressList) {
+    public static void trigger(int jobId, TriggerTypeEnum triggerType, int failRetryCount,
+                               String executorShardingParam, String executorParam, String addressList) {
         helper.addTrigger(jobId, triggerType, failRetryCount, executorShardingParam, executorParam, addressList);
     }
 

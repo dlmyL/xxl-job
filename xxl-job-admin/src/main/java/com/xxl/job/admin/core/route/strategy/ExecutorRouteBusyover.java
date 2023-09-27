@@ -11,6 +11,8 @@ import com.xxl.job.core.biz.model.TriggerParam;
 import java.util.List;
 
 /**
+ * <h1>忙碌转移策略</h1>
+ *
  * Created by xuxueli on 17/3/10.
  */
 public class ExecutorRouteBusyover extends ExecutorRouter {
@@ -19,10 +21,13 @@ public class ExecutorRouteBusyover extends ExecutorRouter {
     public ReturnT<String> route(TriggerParam triggerParam, List<String> addressList) {
         StringBuffer idleBeatResultSB = new StringBuffer();
         for (String address : addressList) {
-            // beat
+            // 遍历执行器地址
             ReturnT<String> idleBeatResult = null;
             try {
+                // 得到执行器发送消息的客户端
                 ExecutorBiz executorBiz = XxlJobScheduler.getExecutorBiz(address);
+                // 向客户端发送忙碌检测请求，判断该执行器的定时任务线程是否正在执行对应的定时任务
+                // 如果正在执行，说明比较忙碌，就不使用该地址了
                 idleBeatResult = executorBiz.idleBeat(new IdleBeatParam(triggerParam.getJobId()));
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
@@ -34,7 +39,7 @@ public class ExecutorRouteBusyover extends ExecutorRouter {
                     .append("<br>code：").append(idleBeatResult.getCode())
                     .append("<br>msg：").append(idleBeatResult.getMsg());
 
-            // beat success
+            // 如果不忙碌就直接使用该地址
             if (idleBeatResult.getCode() == ReturnT.SUCCESS_CODE) {
                 idleBeatResult.setMsg(idleBeatResultSB.toString());
                 idleBeatResult.setContent(address);

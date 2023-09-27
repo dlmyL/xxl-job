@@ -3,7 +3,8 @@ package com.xxl.job.admin.core.trigger;
 import com.xxl.job.admin.core.util.I18nUtil;
 
 /**
- * trigger type enum
+ * <h1>触发枚举类型，这个其实还是对应着触发器任务的类型
+ * 一般都是 cron 类型的</h1>
  *
  * @author xuxueli 2018-09-16 04:56:41
  */
