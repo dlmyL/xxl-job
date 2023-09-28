@@ -3,34 +3,33 @@ package com.xxl.job.admin.core.thread;
 import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
 import com.xxl.job.admin.core.trigger.TriggerTypeEnum;
 import com.xxl.job.admin.core.trigger.XxlJobTrigger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * KEYPOINT 快慢线程池
- * <h1>
- *     xxl-job 服务器的重点类，在这个类中初始化了两个线程池，一个快、一个慢，要被执行的任务会被包装成触发器任务，
- *     提交给这两个线程池中的一个，然后由线程池去执行触发器的任务，在任务中会进行远程调用
- * </h1>
+ * xxl-job 服务器的重点类，在这个类中初始化了两个线程池，一个快、一个慢，要被执行的任务会被包装成触发器任务，
+ * 提交给这两个线程池中的一个，然后由线程池去执行触发器的任务，在任务中会进行远程调用
  */
+@Slf4j
 public class JobTriggerPoolHelper {
-
-    private static Logger logger = LoggerFactory.getLogger(JobTriggerPoolHelper.class);
-
 
     // ---------------------- trigger pool ----------------------
 
     /*
-        下面这两个快慢线程池没有什么本质上的区别，都是线程池而已，只不过快线程池的最大线程数为 200，
-        慢线程池的最大线程数为 100，任务队列也是如此，并且会根据任务执行的耗时来决定下次任务执行的时候
-        是要让快线程池来执行还是让慢线程池来执行，默认选择的是使用快线程池来执行
+    下面这两个快慢线程池没有什么本质上的区别，都是线程池而已，只不过快线程池的最大线程数为 200，
+    慢线程池的最大线程数为 100，任务队列也是如此，并且会根据任务执行的耗时来决定下次任务执行的时候
+    是要让快线程池来执行还是让慢线程池来执行，默认选择的是使用快线程池来执行
 
-        【注意】所谓的快慢线程池并不是说线程执行任务的快慢，而是任务的快慢决定了线程的快慢
-         直接来讲，执行耗时较短的任务，我们可以称它为快速任务，而执行这些任务的线程池，就被称为了
-         快线程池，如果任务耗时较长，就给慢线程池来执行
+    【注意】所谓的快慢线程池并不是说线程执行任务的快慢，而是任务的快慢决定了线程的快慢
+     直接来讲，执行耗时较短的任务，我们可以称它为快速任务，而执行这些任务的线程池，就被称为了
+     快线程池，如果任务耗时较长，就给慢线程池来执行
      */
 
     // 快线程池
@@ -77,7 +76,7 @@ public class JobTriggerPoolHelper {
     public void stop() {
         fastTriggerPool.shutdownNow();
         slowTriggerPool.shutdownNow();
-        logger.info(">>>>>>>>> xxl-job trigger thread pool shutdown success.");
+        log.info(">>>>>>>>> xxl-job trigger thread pool shutdown success.");
     }
 
 
@@ -127,12 +126,12 @@ public class JobTriggerPoolHelper {
                 // 再次获取当前时间，这个时间后面会用到
                 long start = System.currentTimeMillis();
                 try {
-                    // KEYPOINT
+                    // EXEC XxlJobTrigger#trigger
                     // 触发器任务开始执行了，在该方法内部会进行远程调用
-                    XxlJobTrigger.trigger(jobId, triggerType, failRetryCount,
-                            executorShardingParam, executorParam, addressList);
+                    XxlJobTrigger.trigger(jobId, triggerType, failRetryCount, executorShardingParam, executorParam,
+                            addressList);
                 } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+                    log.error(e.getMessage(), e);
                 } finally {
                     // 这里再次获取当前的分钟数，这个分钟数会和刚才上面得到的那个分钟数做对比
                     long minTim_now = System.currentTimeMillis() / 60000;

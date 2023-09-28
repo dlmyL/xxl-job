@@ -9,8 +9,6 @@ import java.util.Random;
 
 /**
  * <h1>随机选择一个</h1>
- *
- * Created by xuxueli on 17/3/10.
  */
 public class ExecutorRouteRandom extends ExecutorRouter {
 
@@ -19,7 +17,7 @@ public class ExecutorRouteRandom extends ExecutorRouter {
     @Override
     public ReturnT<String> route(TriggerParam triggerParam, List<String> addressList) {
         String address = addressList.get(localRandom.nextInt(addressList.size()));
-        return new ReturnT<String>(address);
+        return new ReturnT<>(address);
     }
 
 }

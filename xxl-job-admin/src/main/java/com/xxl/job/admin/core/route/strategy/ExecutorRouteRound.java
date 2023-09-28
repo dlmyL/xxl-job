@@ -12,8 +12,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <h1>通过轮询策略选择执行器地址</h1>
- *
- * Created by xuxueli on 17/3/10.
  */
 public class ExecutorRouteRound extends ExecutorRouter {
     /**
@@ -31,7 +29,7 @@ public class ExecutorRouteRound extends ExecutorRouter {
             // 如果大于，则意味着数据过期了，清除即可
             routeCountEachJob.clear();
             // 重新设置数据缓存有效期
-            CACHE_VALID_TIME = System.currentTimeMillis() + 1000*60*60*24;
+            CACHE_VALID_TIME = System.currentTimeMillis() + 1000 * 60 * 60 * 24;
         }
         // 根据定时任务 ID 从 Map 中取出对应的次数
         AtomicInteger count = routeCountEachJob.get(jobId);
@@ -63,8 +61,8 @@ public class ExecutorRouteRound extends ExecutorRouter {
         // 这里就是简单的取余操作，在 routeCountEachJob 中会记录着定时任务对应的一个数值，这个数值会和执行器
         // 集合的长度做取余运算，得到要使用的执行器地址，而且定时任务每调度一次，他在 routeCountEachJob 中对
         // 应的 value 值就会加 1，然后再和集合长度取余，这样就达到了轮询地址的效果
-        String address = addressList.get(count(triggerParam.getJobId())%addressList.size());
-        return new ReturnT<String>(address);
+        String address = addressList.get(count(triggerParam.getJobId()) % addressList.size());
+        return new ReturnT<>(address);
     }
 
 }

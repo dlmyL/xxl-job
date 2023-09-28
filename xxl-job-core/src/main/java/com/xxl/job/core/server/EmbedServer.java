@@ -17,6 +17,7 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,11 +25,9 @@ import java.util.concurrent.*;
 
 /**
  * <1>执行器这一段内嵌的 Netty 服务器</1>
- *
- * @author xuxueli 2020-04-11 21:25
  */
+@Slf4j
 public class EmbedServer {
-    private static final Logger logger = LoggerFactory.getLogger(EmbedServer.class);
 
     /**
      * 执行器接口，在 start 方法中会被接口的实现类赋值
@@ -94,22 +93,22 @@ public class EmbedServer {
                             .childOption(ChannelOption.SO_KEEPALIVE, true);
                     // 绑定端口号
                     ChannelFuture future = bootstrap.bind(port).sync();
-                    logger.info(">>>>>>>>>>> xxl-job remoting server start success, nettype = {}, port = {}", EmbedServer.class, port);
+                    log.info(">>>>>>>>>>> xxl-job remoting server start success, nettype = {}, port = {}", EmbedServer.class, port);
                     // 注册执行器到调度中心
                     startRegistry(appname, address);
                     // 等待关闭
                     future.channel().closeFuture().sync();
                 } catch (InterruptedException e) {
-                    logger.info(">>>>>>>>>>> xxl-job remoting server stop.");
+                    log.info(">>>>>>>>>>> xxl-job remoting server stop.");
                 } catch (Exception e) {
-                    logger.error(">>>>>>>>>>> xxl-job remoting server error.", e);
+                    log.error(">>>>>>>>>>> xxl-job remoting server error.", e);
                 } finally {
                     // 优雅释放资源
                     try {
                         workerGroup.shutdownGracefully();
                         bossGroup.shutdownGracefully();
                     } catch (Exception e) {
-                        logger.error(e.getMessage(), e);
+                        log.error(e.getMessage(), e);
                     }
                 }
             }
@@ -129,7 +128,7 @@ public class EmbedServer {
 
         // 销毁注册执行器到调度中心的线程
         stopRegistry();
-        logger.info(">>>>>>>>>>> xxl-job remoting server destroy success.");
+        log.info(">>>>>>>>>>> xxl-job remoting server destroy success.");
     }
 
 
@@ -241,7 +240,7 @@ public class EmbedServer {
                         return new ReturnT<String>(ReturnT.FAIL_CODE, "invalid request, uri-mapping(" + uri + ") not found.");
                 }
             } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+                log.error(e.getMessage(), e);
                 return new ReturnT<String>(ReturnT.FAIL_CODE, "request error:" + ThrowableUtil.toString(e));
             }
         }
@@ -271,7 +270,7 @@ public class EmbedServer {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            logger.error(">>>>>>>>>>> xxl-job provider netty_http server caught exception", cause);
+            log.error(">>>>>>>>>>> xxl-job provider netty_http server caught exception", cause);
             ctx.close();
         }
 
@@ -279,7 +278,7 @@ public class EmbedServer {
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
             if (evt instanceof IdleStateEvent) {
                 ctx.channel().close();      // beat 3N, close if idle
-                logger.debug(">>>>>>>>>>> xxl-job provider netty_http server close an idle channel.");
+                log.debug(">>>>>>>>>>> xxl-job provider netty_http server close an idle channel.");
             } else {
                 super.userEventTriggered(ctx, evt);
             }

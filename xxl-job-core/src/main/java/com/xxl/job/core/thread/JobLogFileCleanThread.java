@@ -2,8 +2,7 @@ package com.xxl.job.core.thread;
 
 import com.xxl.job.core.log.XxlJobFileAppender;
 import com.xxl.job.core.util.FileUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.text.ParseException;
@@ -14,14 +13,13 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>Job 日志清除线程</h1>
- *
- * @author xuxueli 2017-12-29 16:23:43
  */
+@Slf4j
 public class JobLogFileCleanThread {
-    private static Logger logger = LoggerFactory.getLogger(JobLogFileCleanThread.class);
 
     private static JobLogFileCleanThread instance = new JobLogFileCleanThread();
-    public static JobLogFileCleanThread getInstance(){
+
+    public static JobLogFileCleanThread getInstance() {
         return instance;
     }
 
@@ -37,10 +35,10 @@ public class JobLogFileCleanThread {
     /**
      * <h2>启动该组件的方法</h2>
      */
-    public void start(final long logRetentionDays){
+    public void start(final long logRetentionDays) {
         // logRetentionDays 为用户在配置文件设定的日志过期时间
         // 这里有个判断，如果日志过期时间少于 3 天就直接退出
-        if (logRetentionDays < 3 ) {
+        if (logRetentionDays < 3) {
             return;
         }
 
@@ -52,18 +50,18 @@ public class JobLogFileCleanThread {
                         // 得到该路径下的所有日志文件
                         File[] childDirs = new File(XxlJobFileAppender.getLogPath()).listFiles();
                         // 判断日志文件数组非空
-                        if (childDirs!=null && childDirs.length>0) {
+                        if (childDirs != null && childDirs.length > 0) {
                             // 得到当前时间
                             Calendar todayCal = Calendar.getInstance();
-                            todayCal.set(Calendar.HOUR_OF_DAY,0);
-                            todayCal.set(Calendar.MINUTE,0);
-                            todayCal.set(Calendar.SECOND,0);
-                            todayCal.set(Calendar.MILLISECOND,0);
+                            todayCal.set(Calendar.HOUR_OF_DAY, 0);
+                            todayCal.set(Calendar.MINUTE, 0);
+                            todayCal.set(Calendar.SECOND, 0);
+                            todayCal.set(Calendar.MILLISECOND, 0);
 
                             Date todayDate = todayCal.getTime();
 
                             // 遍历日志文件
-                            for (File childFile: childDirs) {
+                            for (File childFile : childDirs) {
                                 // 如果不是文件夹就跳过这次循环，因为现在找到的都是文件夹，文件夹的名称是定时任务执行的年月日时间
                                 // 比如，2023-09-05，2023-10-02等等，每个时间都是一个文件夹，文件夹中有很多个日志文件，文件名称就是定时任务的 ID
                                 if (!childFile.isDirectory()) {
@@ -81,13 +79,13 @@ public class JobLogFileCleanThread {
                                     // 得到创建时间
                                     logFileCreateDate = simpleDateFormat.parse(childFile.getName());
                                 } catch (ParseException e) {
-                                    logger.error(e.getMessage(), e);
+                                    log.error(e.getMessage(), e);
                                 }
                                 if (logFileCreateDate == null) {
                                     continue;
                                 }
                                 // 计算刚才得到的今天的零点时间减去日志文件创建的时间是否大于了用户设定的日志过期时间
-                                if ((todayDate.getTime()-logFileCreateDate.getTime()) >= logRetentionDays * (24 * 60 * 60 * 1000) ) {
+                                if ((todayDate.getTime() - logFileCreateDate.getTime()) >= logRetentionDays * (24 * 60 * 60 * 1000)) {
                                     // 如果超过了就把过期的日志删除了
                                     FileUtil.deleteRecursively(childFile);
                                 }
@@ -97,7 +95,7 @@ public class JobLogFileCleanThread {
 
                     } catch (Exception e) {
                         if (!toStop) {
-                            logger.error(e.getMessage(), e);
+                            log.error(e.getMessage(), e);
                         }
 
                     }
@@ -106,11 +104,11 @@ public class JobLogFileCleanThread {
                         TimeUnit.DAYS.sleep(1);
                     } catch (InterruptedException e) {
                         if (!toStop) {
-                            logger.error(e.getMessage(), e);
+                            log.error(e.getMessage(), e);
                         }
                     }
                 }
-                logger.info(">>>>>>>>>>> xxl-job, executor JobLogFileCleanThread thread destroy.");
+                log.info(">>>>>>>>>>> xxl-job, executor JobLogFileCleanThread thread destroy.");
 
             }
         });
@@ -131,7 +129,7 @@ public class JobLogFileCleanThread {
         try {
             localThread.join();
         } catch (InterruptedException e) {
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
         }
     }
 

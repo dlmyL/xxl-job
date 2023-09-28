@@ -5,8 +5,7 @@ import com.xxl.job.admin.core.model.XxlJobInfo;
 import com.xxl.job.admin.core.model.XxlJobLog;
 import com.xxl.job.admin.core.trigger.TriggerTypeEnum;
 import com.xxl.job.admin.core.util.I18nUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -14,9 +13,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * <h1>该类是当调度中心调度任务失败的时候，发送邮件用的</h1>
  */
+@Slf4j
 public class JobFailMonitorHelper {
-
-    private static Logger logger = LoggerFactory.getLogger(JobFailMonitorHelper.class);
 
     private static JobFailMonitorHelper instance = new JobFailMonitorHelper();
 
@@ -76,6 +74,7 @@ public class JobFailMonitorHelper {
 
                                 // 1、判断该定时任务的失败重试次数是否大于0
                                 if (log.getExecutorFailRetryCount() > 0) {
+                                    // EXEC JobTriggerPoolHelper#trigger
 									// 如果大于0就立刻远程调度一次
 									// 【注意】log.getExecutorFailRetryCount()-1这行代码，就会在每次重试的时候把重试次数减1，直到为0
                                     JobTriggerPoolHelper.trigger(log.getJobId(), TriggerTypeEnum.RETRY,
@@ -91,7 +90,7 @@ public class JobFailMonitorHelper {
                                 // 2、定义一个新的报警状态
                                 int newAlarmStatus = 0;        // 告警状态：0-默认、-1=锁定状态、1-无需告警、2-告警成功、3-告警失败
                                 if (info != null) {
-									// EXEC
+									// EXEC JobAlarmer#alarm
 									// 如果查询到了执行失败的定时任务，就直接报警，发送告警邮件
                                     boolean alarmResult = XxlJobAdminConfig.getAdminConfig().getJobAlarmer().alarm(info, log);
 									// 判断是否发送成功，如果发送成功就把报警状态设置为2，2就代表报警成功了，3就代表失败
@@ -106,18 +105,18 @@ public class JobFailMonitorHelper {
                         }
                     } catch (Exception e) {
                         if (!toStop) {
-                            logger.error(">>>>>>>>>>> xxl-job, job fail monitor thread error:{}", e);
+                            log.error(">>>>>>>>>>> xxl-job, job fail monitor thread error:{}", e);
                         }
                     }
                     try {
                         TimeUnit.SECONDS.sleep(10);
                     } catch (Exception e) {
                         if (!toStop) {
-                            logger.error(e.getMessage(), e);
+                            log.error(e.getMessage(), e);
                         }
                     }
                 }
-                logger.info(">>>>>>>>>>> xxl-job, job fail monitor thread stop");
+                log.info(">>>>>>>>>>> xxl-job, job fail monitor thread stop");
             }
         });
         monitorThread.setDaemon(true);
@@ -131,7 +130,7 @@ public class JobFailMonitorHelper {
         try {
             monitorThread.join();
         } catch (InterruptedException e) {
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
         }
     }
 

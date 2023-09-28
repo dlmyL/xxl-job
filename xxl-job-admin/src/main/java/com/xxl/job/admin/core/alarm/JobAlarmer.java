@@ -2,8 +2,7 @@ package com.xxl.job.admin.core.alarm;
 
 import com.xxl.job.admin.core.model.XxlJobInfo;
 import com.xxl.job.admin.core.model.XxlJobLog;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
@@ -17,9 +16,9 @@ import java.util.Map;
 /**
  * <h1>这个类是用来发送报警邮件的，但实际上真正的功能实在 EmailJobAlarm 中实现的</h1>
  */
+@Slf4j
 @Component
 public class JobAlarmer implements ApplicationContextAware, InitializingBean {
-    private static Logger logger = LoggerFactory.getLogger(JobAlarmer.class);
 
     /**
      * spring 容器
@@ -43,7 +42,7 @@ public class JobAlarmer implements ApplicationContextAware, InitializingBean {
         // 把容器中所有的邮件报警器收集到 jobAlarmList 中
         Map<String, JobAlarm> serviceBeanMap = applicationContext.getBeansOfType(JobAlarm.class);
         if (serviceBeanMap != null && serviceBeanMap.size() > 0) {
-            jobAlarmList = new ArrayList<JobAlarm>(serviceBeanMap.values());
+            jobAlarmList = new ArrayList<>(serviceBeanMap.values());
         }
     }
 
@@ -53,18 +52,19 @@ public class JobAlarmer implements ApplicationContextAware, InitializingBean {
     public boolean alarm(XxlJobInfo info, XxlJobLog jobLog) {
         boolean result = false;
         // 先判断邮件报警器集合是否为空
-        if (jobAlarmList!=null && jobAlarmList.size()>0) {
+        if (jobAlarmList != null && jobAlarmList.size() > 0) {
             // 不为空就先设置所有报警器发送结果都为成功
             result = true;
             // 遍历邮件报警器
-            for (JobAlarm alarm: jobAlarmList) {
+            for (JobAlarm alarm : jobAlarmList) {
                 // 设置发送结果为 false
                 boolean resultItem = false;
                 try {
+                    // EXEC EmailJobAlarm#doAlarm
                     // 在这里真正发送报警邮件给用户，然后返回给用户发送结果
                     resultItem = alarm.doAlarm(info, jobLog);
                 } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+                    log.error(e.getMessage(), e);
                 }
                 if (!resultItem) {
                     // 在这里可以看到，如果发送失败，就把最开始设置的 result 重新改为 false

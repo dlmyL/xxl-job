@@ -9,21 +9,16 @@ import com.xxl.job.core.util.XxlJobRemotingUtil;
 import java.util.List;
 
 /**
- * KEYPOINT 执行器 ==> 调度中心
- *
  * <h1>该类就是执行器用来访问调度中心的客户端</h1>
- *
- * @author xuxueli 2017-07-28 22:14:52
  */
 public class AdminBizClient implements AdminBiz {
 
     public AdminBizClient() {
     }
+
     public AdminBizClient(String addressUrl, String accessToken) {
         this.addressUrl = addressUrl;
         this.accessToken = accessToken;
-
-        // valid
         if (!this.addressUrl.endsWith("/")) {
             this.addressUrl = this.addressUrl + "/";
         }
@@ -32,7 +27,7 @@ public class AdminBizClient implements AdminBiz {
     /**
      * 这里的地址就是调度中心的服务地址
      */
-    private String addressUrl ;
+    private String addressUrl;
     /**
      * TOKEN 令牌，执行器和调度中心两端要一致
      */
@@ -47,7 +42,7 @@ public class AdminBizClient implements AdminBiz {
      */
     @Override
     public ReturnT<String> callback(List<HandleCallbackParam> callbackParamList) {
-        return XxlJobRemotingUtil.postBody(addressUrl+"api/callback", accessToken, timeout, callbackParamList, String.class);
+        return XxlJobRemotingUtil.postBody(addressUrl + "api/callback", accessToken, timeout, callbackParamList, String.class);
     }
 
     /**

@@ -8,8 +8,7 @@ import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.executor.XxlJobExecutor;
 import com.xxl.job.core.handler.IJobHandler;
 import com.xxl.job.core.log.XxlJobFileAppender;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -17,7 +16,11 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * <h1>该类就是用来真正执行定时任务的，并且是一个定时任务对应着一个 JobThread 对象</h1>
@@ -27,11 +30,9 @@ import java.util.concurrent.*;
  * 队列中等待执行，由此也就引申出了阻塞策略，是选择覆盖还是直接丢弃等等
  * 该类继承了thread，本身就是一个线程
  * </p>
- *
- * @author xuxueli 2016-1-16 19:52:47
  */
+@Slf4j
 public class JobThread extends Thread {
-    private static Logger logger = LoggerFactory.getLogger(JobThread.class);
 
     /**
      * 定时任务的 ID
@@ -90,7 +91,7 @@ public class JobThread extends Thread {
     public ReturnT<String> pushTriggerQueue(TriggerParam triggerParam) {
         // 先判断 set 集合中是否包含定时任务的地址 ID，如果包含就说明定时任务正在执行
         if (triggerLogIdSet.contains(triggerParam.getLogId())) {
-            logger.info(">>>>>>>>>>> repeate trigger job, logId:{}", triggerParam.getLogId());
+            log.info(">>>>>>>>>>> repeate trigger job, logId:{}", triggerParam.getLogId());
             // 返回失败信息，定时任务重复了
             return new ReturnT<>(ReturnT.FAIL_CODE, "repeate trigger job, logId:" + triggerParam.getLogId());
         }
@@ -131,7 +132,7 @@ public class JobThread extends Thread {
             // 就在这里反射调用 BEAN 对象的初始化方法
             handler.init();
         } catch (Throwable e) {
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
         }
 
         // 现在就要在一个循环中不断的从触发器队列中取出待执行的定时任务，开始执行
@@ -309,10 +310,10 @@ public class JobThread extends Thread {
             // 执行 BEAN 对象的销毁方法
             handler.destroy();
         } catch (Throwable e) {
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
         }
 
-        logger.info(">>>>>>>>>>> xxl-job JobThread stoped, hashCode:{}", Thread.currentThread());
+        log.info(">>>>>>>>>>> xxl-job JobThread stoped, hashCode:{}", Thread.currentThread());
     }
 
 }

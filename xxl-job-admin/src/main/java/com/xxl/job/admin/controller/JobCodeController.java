@@ -7,29 +7,26 @@ import com.xxl.job.admin.dao.XxlJobInfoDao;
 import com.xxl.job.admin.dao.XxlJobLogGlueDao;
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.glue.GlueTypeEnum;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 import java.util.List;
 
 /**
  * <h1>如果定时任务是 glue 模式，那就需要在前端页面编写代码，这个类就是负责在线编辑定时任务的查找和保存</h1>
- *
- * @author xuxueli 2015-12-19 16:13:16
  */
 @Controller
+@RequiredArgsConstructor
 @RequestMapping("/jobcode")
 public class JobCodeController {
 	
-	@Resource
-	private XxlJobInfoDao xxlJobInfoDao;
-	@Resource
-	private XxlJobLogGlueDao xxlJobLogGlueDao;
+	private final XxlJobInfoDao xxlJobInfoDao;
+	private final XxlJobLogGlueDao xxlJobLogGlueDao;
 
 	@RequestMapping
 	public String index(HttpServletRequest request, Model model, int jobId) {

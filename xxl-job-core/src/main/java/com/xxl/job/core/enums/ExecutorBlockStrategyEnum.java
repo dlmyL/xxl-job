@@ -1,10 +1,13 @@
 package com.xxl.job.core.enums;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * <h1>阻塞处理策略</h1>
- *
- * Created by xuxueli on 17/5/9.
  */
+@AllArgsConstructor
 public enum ExecutorBlockStrategyEnum {
 
     /**
@@ -21,17 +24,9 @@ public enum ExecutorBlockStrategyEnum {
      */
     COVER_EARLY("Cover Early");
 
+    @Getter
+    @Setter
     private String title;
-    private ExecutorBlockStrategyEnum (String title) {
-        this.title = title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-    public String getTitle() {
-        return title;
-    }
 
     public static ExecutorBlockStrategyEnum match(String name, ExecutorBlockStrategyEnum defaultItem) {
         if (name != null) {

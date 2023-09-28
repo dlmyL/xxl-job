@@ -3,45 +3,49 @@ package com.xxl.job.core.biz;
 import com.xxl.job.core.biz.model.*;
 
 /**
- * <h1>用于远程调用的客户端接口</h1>
- *
- * Created by xuxueli on 17/3/1.
+ * 执行器 RESTful API，提供给调度端进行调用
+ * API服务位置：com.xxl.job.core.biz.ExecutorBiz
  */
 public interface ExecutorBiz {
 
     /**
-     * beat
-     * @return
+     * 心跳检测
+     * ------
+     * 说明：    调度中心检测执行器是否在线时使用
+     * 地址格式：{执行器内嵌服务根地址}/beat
      */
-    public ReturnT<String> beat();
+    ReturnT<String> beat();
 
     /**
-     * idle beat
-     *
-     * @param idleBeatParam
-     * @return
+     * 忙碌检测
+     * ------
+     * 说明：    调度中心检测指定执行器上指定任务是否忙碌（运行中）时使用
+     * 地址格式：{执行器内嵌服务根地址}/idleBeat
      */
-    public ReturnT<String> idleBeat(IdleBeatParam idleBeatParam);
+    ReturnT<String> idleBeat(IdleBeatParam idleBeatParam);
 
     /**
-     * run
-     * @param triggerParam
-     * @return
+     * 触发任务
+     * ------
+     * 说明：    触发任务执行
+     * 地址格式：{执行器内嵌服务根地址}/run
      */
-    public ReturnT<String> run(TriggerParam triggerParam);
+    ReturnT<String> run(TriggerParam triggerParam);
 
     /**
-     * kill
-     * @param killParam
-     * @return
+     * 终止任务
+     * ------
+     * 说明：    终止任务
+     * 地址格式：{执行器内嵌服务根地址}/kill
      */
-    public ReturnT<String> kill(KillParam killParam);
+    ReturnT<String> kill(KillParam killParam);
 
     /**
-     * log
-     * @param logParam
-     * @return
+     * 查看执行日志
+     * ------
+     * 说明：    终止任务，滚动方式加载
+     * 地址格式：{执行器内嵌服务根地址}/log
      */
-    public ReturnT<LogResult> log(LogParam logParam);
+    ReturnT<LogResult> log(LogParam logParam);
 
 }

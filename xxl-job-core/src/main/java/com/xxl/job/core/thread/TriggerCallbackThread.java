@@ -10,8 +10,7 @@ import com.xxl.job.core.executor.XxlJobExecutor;
 import com.xxl.job.core.log.XxlJobFileAppender;
 import com.xxl.job.core.util.FileUtil;
 import com.xxl.job.core.util.JdkSerializeTool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,28 +21,27 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>回调调度中心的线程</h1>
- *
- * Created by xuxueli on 16/7/22.
  */
+@Slf4j
 public class TriggerCallbackThread {
-    private static Logger logger = LoggerFactory.getLogger(TriggerCallbackThread.class);
 
     private static TriggerCallbackThread instance = new TriggerCallbackThread();
-    public static TriggerCallbackThread getInstance(){
+
+    public static TriggerCallbackThread getInstance() {
         return instance;
     }
 
     /**
      * 要被回调给调度中心的定时任务执行结果的信息，会封装在 HandlerCallbackParam 对象中，而该对象会先放在该队列中
      */
-    private LinkedBlockingQueue<HandleCallbackParam> callBackQueue = new LinkedBlockingQueue<HandleCallbackParam>();
+    private LinkedBlockingQueue<HandleCallbackParam> callBackQueue = new LinkedBlockingQueue<>();
 
     /**
      * <h2>把封装回调信息的 HandlerCallbackParam 对象提交给 callBackQueue 队列</h2>
      */
-    public static void pushCallBack(HandleCallbackParam callback){
+    public static void pushCallBack(HandleCallbackParam callback) {
         getInstance().callBackQueue.add(callback);
-        logger.debug(">>>>>>>>>>> xxl-job, push callback request, logId:{}", callback.getLogId());
+        log.debug(">>>>>>>>>>> xxl-job, push callback request, logId:{}", callback.getLogId());
     }
 
     /**
@@ -62,7 +60,7 @@ public class TriggerCallbackThread {
     public void start() {
         // 对访问调度中心的客户端做判空操作
         if (XxlJobExecutor.getAdminBizList() == null) {
-            logger.warn(">>>>>>>>>>> xxl-job, executor callback config fail, adminAddresses is null.");
+            log.warn(">>>>>>>>>>> xxl-job, executor callback config fail, adminAddresses is null.");
             return;
         }
 
@@ -71,7 +69,7 @@ public class TriggerCallbackThread {
             @Override
             public void run() {
                 // 正常的回调
-                while(!toStop){
+                while (!toStop) {
                     try {
                         // 从回调任务队列中取出一个回调的信息对象
                         HandleCallbackParam callback = getInstance().callBackQueue.take();
@@ -90,14 +88,14 @@ public class TriggerCallbackThread {
                              */
                             callbackParamList.add(callback);
                             // 进行回调，如果发生错误就会自动重试
-                            if (callbackParamList!=null && callbackParamList.size()>0) {
+                            if (callbackParamList != null && callbackParamList.size() > 0) {
                                 // 在这里执行回调给调度中心的操作
                                 doCallback(callbackParamList);
                             }
                         }
                     } catch (Exception e) {
                         if (!toStop) {
-                            logger.error(e.getMessage(), e);
+                            log.error(e.getMessage(), e);
                         }
                     }
                 }
@@ -107,16 +105,16 @@ public class TriggerCallbackThread {
                     List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
                     // 这里会再次把回调队列中的所有数据都放到新的集合中
                     int drainToNum = getInstance().callBackQueue.drainTo(callbackParamList);
-                    if (callbackParamList!=null && callbackParamList.size()>0) {
+                    if (callbackParamList != null && callbackParamList.size() > 0) {
                         // 最后再回调一次信息给注册中心
                         doCallback(callbackParamList);
                     }
                 } catch (Exception e) {
                     if (!toStop) {
-                        logger.error(e.getMessage(), e);
+                        log.error(e.getMessage(), e);
                     }
                 }
-                logger.info(">>>>>>>>>>> xxl-job, executor callback thread destroy.");
+                log.info(">>>>>>>>>>> xxl-job, executor callback thread destroy.");
 
             }
         });
@@ -129,13 +127,13 @@ public class TriggerCallbackThread {
         triggerRetryCallbackThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while(!toStop){
+                while (!toStop) {
                     try {
                         // 重新回调一次
                         retryFailCallbackFile();
                     } catch (Exception e) {
                         if (!toStop) {
-                            logger.error(e.getMessage(), e);
+                            log.error(e.getMessage(), e);
                         }
 
                     }
@@ -144,11 +142,11 @@ public class TriggerCallbackThread {
                         TimeUnit.SECONDS.sleep(RegistryConfig.BEAT_TIMEOUT);
                     } catch (InterruptedException e) {
                         if (!toStop) {
-                            logger.error(e.getMessage(), e);
+                            log.error(e.getMessage(), e);
                         }
                     }
                 }
-                logger.info(">>>>>>>>>>> xxl-job, executor retry callback thread destroy.");
+                log.info(">>>>>>>>>>> xxl-job, executor retry callback thread destroy.");
             }
         });
         triggerRetryCallbackThread.setDaemon(true);
@@ -159,14 +157,14 @@ public class TriggerCallbackThread {
     /**
      * <h2>终止该组件工作的方法</h2>
      */
-    public void toStop(){
+    public void toStop() {
         toStop = true;
         if (triggerCallbackThread != null) {
             triggerCallbackThread.interrupt();
             try {
                 triggerCallbackThread.join();
             } catch (InterruptedException e) {
-                logger.error(e.getMessage(), e);
+                log.error(e.getMessage(), e);
             }
         }
         if (triggerRetryCallbackThread != null) {
@@ -174,7 +172,7 @@ public class TriggerCallbackThread {
             try {
                 triggerRetryCallbackThread.join();
             } catch (InterruptedException e) {
-                logger.error(e.getMessage(), e);
+                log.error(e.getMessage(), e);
             }
         }
 
@@ -183,14 +181,14 @@ public class TriggerCallbackThread {
     /**
      * <h2>回调定时任务的执行信息给调度中心</h2>
      */
-    private void doCallback(List<HandleCallbackParam> callbackParamList){
+    private void doCallback(List<HandleCallbackParam> callbackParamList) {
         boolean callbackRet = false;
         // 获得访问调度中心的客户端集合，并且遍历它们
-        for (AdminBiz adminBiz: XxlJobExecutor.getAdminBizList()) {
+        for (AdminBiz adminBiz : XxlJobExecutor.getAdminBizList()) {
             try {
                 // 在这里进行回调
                 ReturnT<String> callbackResult = adminBiz.callback(callbackParamList);
-                if (callbackResult!=null && ReturnT.SUCCESS_CODE == callbackResult.getCode()) {
+                if (callbackResult != null && ReturnT.SUCCESS_CODE == callbackResult.getCode()) {
                     // 回调成功了，就记录一下日志
                     callbackLog(callbackParamList, "<br>----------- xxl-job job callback finish.");
                     // 把回调标志位改成 true，说明回调成功了
@@ -198,11 +196,13 @@ public class TriggerCallbackThread {
                     break;
                 } else {
                     // 回调失败了，记录一下日志
-                    callbackLog(callbackParamList, "<br>----------- xxl-job job callback fail, callbackResult:" + callbackResult);
+                    callbackLog(callbackParamList,
+                            "<br>----------- xxl-job job callback fail, callbackResult:" + callbackResult);
                 }
             } catch (Exception e) {
                 // 回调异常了，记录一下日志
-                callbackLog(callbackParamList, "<br>----------- xxl-job job callback error, errorMsg:" + e.getMessage());
+                callbackLog(callbackParamList,
+                        "<br>----------- xxl-job job callback error, errorMsg:" + e.getMessage());
             }
         }
         if (!callbackRet) {
@@ -213,14 +213,15 @@ public class TriggerCallbackThread {
 
     /**
      * <h2>
-     *     回调失败的话，记录失败日志
-     *     注意：这里记录的失败日志，是把每个日志记录到回调信息对应的每个定时任务的本地日志文件中
+     * 回调失败的话，记录失败日志
+     * 注意：这里记录的失败日志，是把每个日志记录到回调信息对应的每个定时任务的本地日志文件中
      * </h2>
      */
-    private void callbackLog(List<HandleCallbackParam> callbackParamList, String logContent){
-        for (HandleCallbackParam callbackParam: callbackParamList) {
+    private void callbackLog(List<HandleCallbackParam> callbackParamList, String logContent) {
+        for (HandleCallbackParam callbackParam : callbackParamList) {
             // 这里创建日志文件名，可以看到，其实是和定时任务的本地日志文件是一样的，所以就是把信息存储到定时任务日志的本地文件中，一一对应地存储
-            String logFileName = XxlJobFileAppender.makeLogFileName(new Date(callbackParam.getLogDateTim()), callbackParam.getLogId());
+            String logFileName = XxlJobFileAppender.makeLogFileName(new Date(callbackParam.getLogDateTim()),
+                    callbackParam.getLogId());
             // 设置上下文对象，把上下文对象放到线程的私有容器中
             XxlJobContext.setXxlJobContext(new XxlJobContext(
                     -1,
@@ -239,7 +240,8 @@ public class TriggerCallbackThread {
     /**
      * 设置回调失败日志的本地存储路径
      */
-    private static String failCallbackFilePath = XxlJobFileAppender.getLogPath().concat(File.separator).concat("callbacklog").concat(File.separator);
+    private static String failCallbackFilePath = XxlJobFileAppender.getLogPath().concat(File.separator).concat(
+            "callbacklog").concat(File.separator);
     /**
      * 设置回调失败日志存储的文件名
      */
@@ -248,18 +250,20 @@ public class TriggerCallbackThread {
     /**
      * <h2>回调失败了的意思，就把回调失败的数据存储到本地一个专门的文件当中，方便重试线程重新回调</h2>
      */
-    private void appendFailCallbackFile(List<HandleCallbackParam> callbackParamList){
+    private void appendFailCallbackFile(List<HandleCallbackParam> callbackParamList) {
         // 判空校验
-        if (callbackParamList==null || callbackParamList.size()==0) {
+        if (callbackParamList == null || callbackParamList.size() == 0) {
             return;
         }
         // 把回调数据序列化
         byte[] callbackParamList_bytes = JdkSerializeTool.serialize(callbackParamList);
         // 创建文件名，把 x 用当前时间戳替换
-        File callbackLogFile = new File(failCallbackFileName.replace("{x}", String.valueOf(System.currentTimeMillis())));
+        File callbackLogFile = new File(failCallbackFileName.replace("{x}",
+                String.valueOf(System.currentTimeMillis())));
         if (callbackLogFile.exists()) {
             for (int i = 0; i < 100; i++) {
-                callbackLogFile = new File(failCallbackFileName.replace("{x}", String.valueOf(System.currentTimeMillis()).concat("-").concat(String.valueOf(i)) ));
+                callbackLogFile = new File(failCallbackFileName.replace("{x}",
+                        String.valueOf(System.currentTimeMillis()).concat("-").concat(String.valueOf(i))));
                 if (!callbackLogFile.exists()) {
                     break;
                 }
@@ -272,7 +276,7 @@ public class TriggerCallbackThread {
     /**
      * <h2>重新回调执行结果给调度中心</h2>
      */
-    private void retryFailCallbackFile(){
+    private void retryFailCallbackFile() {
         // 得到文件夹的路径
         File callbackLogPath = new File(failCallbackFilePath);
         if (!callbackLogPath.exists()) {
@@ -281,26 +285,26 @@ public class TriggerCallbackThread {
         if (callbackLogPath.isFile()) {
             callbackLogPath.delete();
         }
-        if (!(callbackLogPath.isDirectory() && callbackLogPath.list()!=null && callbackLogPath.list().length>0)) {
+        if (!(callbackLogPath.isDirectory() && callbackLogPath.list() != null && callbackLogPath.list().length > 0)) {
             return;
         }
         // 遍历文件夹中的日志文件
-        for (File callbaclLogFile: callbackLogPath.listFiles()) {
+        for (File callbaclLogFile : callbackLogPath.listFiles()) {
             // 读取日志信息
             byte[] callbackParamList_bytes = FileUtil.readFileContent(callbaclLogFile);
-            if(callbackParamList_bytes == null || callbackParamList_bytes.length < 1){
+            if (callbackParamList_bytes == null || callbackParamList_bytes.length < 1) {
                 // 如果文件是空的就删除
                 callbaclLogFile.delete();
                 continue;
             }
             // 反序列化一下
-            List<HandleCallbackParam> callbackParamList = (List<HandleCallbackParam>) JdkSerializeTool.deserialize(callbackParamList_bytes, List.class);
+            List<HandleCallbackParam> callbackParamList =
+                    (List<HandleCallbackParam>) JdkSerializeTool.deserialize(callbackParamList_bytes, List.class);
             // 删除文件
             callbaclLogFile.delete();
             // 重新回调一次
             doCallback(callbackParamList);
         }
-
     }
 
 }

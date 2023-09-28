@@ -1,10 +1,13 @@
 package com.xxl.job.core.glue;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 /**
  * <h1>运行模式枚举类</h1>
- *
- * Created by xuxueli on 17/4/26.
  */
+@Getter
+@AllArgsConstructor
 public enum GlueTypeEnum {
 
     /**
@@ -18,33 +21,10 @@ public enum GlueTypeEnum {
     GLUE_NODEJS("GLUE(Nodejs)", true, "node", ".js"),
     GLUE_POWERSHELL("GLUE(PowerShell)", true, "powershell", ".ps1");
 
-    private String desc;
-    private boolean isScript;
-    private String cmd;
-    private String suffix;
-
-    private GlueTypeEnum(String desc, boolean isScript, String cmd, String suffix) {
-        this.desc = desc;
-        this.isScript = isScript;
-        this.cmd = cmd;
-        this.suffix = suffix;
-    }
-
-    public String getDesc() {
-        return desc;
-    }
-
-    public boolean isScript() {
-        return isScript;
-    }
-
-    public String getCmd() {
-        return cmd;
-    }
-
-    public String getSuffix() {
-        return suffix;
-    }
+    private final String desc;
+    private final boolean isScript;
+    private final String cmd;
+    private final String suffix;
 
     public static GlueTypeEnum match(String name){
         for (GlueTypeEnum item: GlueTypeEnum.values()) {

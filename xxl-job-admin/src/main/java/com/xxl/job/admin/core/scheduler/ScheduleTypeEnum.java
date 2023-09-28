@@ -1,12 +1,13 @@
 package com.xxl.job.admin.core.scheduler;
 
 import com.xxl.job.admin.core.util.I18nUtil;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * <h1>定时任务的调度类型</h1>
- *
- * @author xuxueli 2020-10-29 21:11:23
  */
+@AllArgsConstructor
 public enum ScheduleTypeEnum {
 
     /**
@@ -29,15 +30,8 @@ public enum ScheduleTypeEnum {
      */
     /*FIX_DELAY(I18nUtil.getString("schedule_type_fix_delay"))*/;
 
-    private String title;
-
-    ScheduleTypeEnum(String title) {
-        this.title = title;
-    }
-
-    public String getTitle() {
-        return title;
-    }
+    @Getter
+    private final String title;
 
     public static ScheduleTypeEnum match(String name, ScheduleTypeEnum defaultItem){
         for (ScheduleTypeEnum item: ScheduleTypeEnum.values()) {

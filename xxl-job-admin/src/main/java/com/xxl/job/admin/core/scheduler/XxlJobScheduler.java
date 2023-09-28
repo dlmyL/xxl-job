@@ -1,24 +1,26 @@
 package com.xxl.job.admin.core.scheduler;
 
 import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
-import com.xxl.job.admin.core.thread.*;
+import com.xxl.job.admin.core.thread.JobCompleteHelper;
+import com.xxl.job.admin.core.thread.JobFailMonitorHelper;
+import com.xxl.job.admin.core.thread.JobLogReportHelper;
+import com.xxl.job.admin.core.thread.JobRegistryHelper;
+import com.xxl.job.admin.core.thread.JobScheduleHelper;
+import com.xxl.job.admin.core.thread.JobTriggerPoolHelper;
 import com.xxl.job.admin.core.util.I18nUtil;
 import com.xxl.job.core.biz.ExecutorBiz;
 import com.xxl.job.core.biz.client.ExecutorBizClient;
 import com.xxl.job.core.enums.ExecutorBlockStrategyEnum;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * <h1>xxl-job 服务端的启动类，在该类的 init 方法中会初始化各个组件</h1>
- *
- * @author xuxueli 2018-10-28 00:18:17
  */
-public class XxlJobScheduler  {
-    private static final Logger logger = LoggerFactory.getLogger(XxlJobScheduler.class);
+@Slf4j
+public class XxlJobScheduler {
 
     /**
      * <h2>初始化服务端的各个组件</h2>
@@ -49,7 +51,7 @@ public class XxlJobScheduler  {
         // 这个线程会一直扫描判断哪些任务应该执行了，这里面会用到【时间轮】
         JobScheduleHelper.getInstance().start();
 
-        logger.info(">>>>>>>>> init xxl-job admin success.");
+        log.info(">>>>>>>>> init xxl-job admin success.");
     }
 
     /**
@@ -82,8 +84,8 @@ public class XxlJobScheduler  {
     /**
      * <h2>把阻塞策略中的中文初始化好</h2>
      */
-    private void initI18n(){
-        for (ExecutorBlockStrategyEnum item:ExecutorBlockStrategyEnum.values()) {
+    private void initI18n() {
+        for (ExecutorBlockStrategyEnum item : ExecutorBlockStrategyEnum.values()) {
             item.setTitle(I18nUtil.getString("jobconf_block_".concat(item.name())));
         }
     }
@@ -94,9 +96,10 @@ public class XxlJobScheduler  {
      * 这个就是远程调用的 Mqp 集合，在这个集合中存储的就是专门用来远程调用的客户端
      * 这里的 key 是远程调用的服务实例的地址，value 就是对应的客户端
      * 【注意】在 xxl-job 中进行远程调用，实际上使用的是 HTTP，在执行器那一侧，使用的
-     *        也是由 Netty 构建的 HTTP 服务器
+     * 也是由 Netty 构建的 HTTP 服务器
      */
-    private static ConcurrentMap<String, ExecutorBiz> executorBizRepository = new ConcurrentHashMap<String, ExecutorBiz>();
+    private static ConcurrentMap<String, ExecutorBiz> executorBizRepository = new ConcurrentHashMap<>();
+
     /**
      * <h2>通过这个方法可以获得一个进行远程调用的客户端</h2>
      * 所谓的客户端和服务端都是相对的，当然真正的服务端并发压力会大很多，但是仅从收发消息的角度来说，
@@ -104,7 +107,7 @@ public class XxlJobScheduler  {
      */
     public static ExecutorBiz getExecutorBiz(String address) throws Exception {
         // 判断远程地址是否为空
-        if (address==null || address.trim().length()==0) {
+        if (address == null || address.trim().length() == 0) {
             return null;
         }
 

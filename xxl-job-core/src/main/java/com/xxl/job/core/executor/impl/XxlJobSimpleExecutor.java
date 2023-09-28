@@ -2,8 +2,6 @@ package com.xxl.job.core.executor.impl;
 
 import com.xxl.job.core.executor.XxlJobExecutor;
 import com.xxl.job.core.handler.annotation.XxlJob;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -11,21 +9,18 @@ import java.util.List;
 
 /**
  * <h1>不依赖于 SpringBoot 的执行器</h1>
- *
- * @author xuxueli 2020-11-05
  */
 public class XxlJobSimpleExecutor extends XxlJobExecutor {
-    private static final Logger logger = LoggerFactory.getLogger(XxlJobSimpleExecutor.class);
-
 
     private List<Object> xxlJobBeanList = new ArrayList<>();
+
     public List<Object> getXxlJobBeanList() {
         return xxlJobBeanList;
     }
+
     public void setXxlJobBeanList(List<Object> xxlJobBeanList) {
         this.xxlJobBeanList = xxlJobBeanList;
     }
-
 
     @Override
     public void start() {
@@ -48,12 +43,12 @@ public class XxlJobSimpleExecutor extends XxlJobExecutor {
 
 
     private void initJobHandlerMethodRepository(List<Object> xxlJobBeanList) {
-        if (xxlJobBeanList==null || xxlJobBeanList.size()==0) {
+        if (xxlJobBeanList == null || xxlJobBeanList.size() == 0) {
             return;
         }
 
         // init job handler from method
-        for (Object bean: xxlJobBeanList) {
+        for (Object bean : xxlJobBeanList) {
             // method
             Method[] methods = bean.getClass().getDeclaredMethods();
             if (methods.length == 0) {

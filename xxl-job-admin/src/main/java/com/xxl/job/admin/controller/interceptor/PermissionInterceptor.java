@@ -4,11 +4,11 @@ import com.xxl.job.admin.controller.annotation.PermissionLimit;
 import com.xxl.job.admin.core.model.XxlJobUser;
 import com.xxl.job.admin.core.util.I18nUtil;
 import com.xxl.job.admin.service.LoginService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.AsyncHandlerInterceptor;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -18,10 +18,10 @@ import javax.servlet.http.HttpServletResponse;
  * @author xuxueli 2015-12-12 18:09:04
  */
 @Component
+@RequiredArgsConstructor
 public class PermissionInterceptor implements AsyncHandlerInterceptor {
 
-	@Resource
-	private LoginService loginService;
+	private final LoginService loginService;
 
 	@Override
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {

@@ -1,13 +1,16 @@
 package com.xxl.job.admin.core.trigger;
 
 import com.xxl.job.admin.core.util.I18nUtil;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
- * <h1>触发枚举类型，这个其实还是对应着触发器任务的类型
- * 一般都是 cron 类型的</h1>
- *
- * @author xuxueli 2018-09-16 04:56:41
+ * <h1>
+ * 触发枚举类型，这个其实还是对应着触发器任务的类型
+ * 一般都是 cron 类型的
+ * </h1>
  */
+@AllArgsConstructor
 public enum TriggerTypeEnum {
 
     MANUAL(I18nUtil.getString("jobconf_trigger_type_manual")),
@@ -17,12 +20,7 @@ public enum TriggerTypeEnum {
     API(I18nUtil.getString("jobconf_trigger_type_api")),
     MISFIRE(I18nUtil.getString("jobconf_trigger_type_misfire"));
 
-    private TriggerTypeEnum(String title){
-        this.title = title;
-    }
-    private String title;
-    public String getTitle() {
-        return title;
-    }
+    @Getter
+    private final String title;
 
 }

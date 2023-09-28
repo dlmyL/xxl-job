@@ -11,8 +11,6 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * <h1>运行模式工厂类</h1>
- *
- * @author xuxueli 2016-1-2 20:02:27
  */
 public class GlueFactory {
 

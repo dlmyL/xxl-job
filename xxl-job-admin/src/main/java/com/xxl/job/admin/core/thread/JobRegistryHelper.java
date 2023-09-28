@@ -6,12 +6,19 @@ import com.xxl.job.admin.core.model.XxlJobRegistry;
 import com.xxl.job.core.biz.model.RegistryParam;
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.enums.RegistryConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>
@@ -21,9 +28,8 @@ import java.util.concurrent.*;
  * 所以定期检查并清理掉线执行器也需要专门的线程来处理，这两个操作，就是本类的职责
  * </h1>
  */
+@Slf4j
 public class JobRegistryHelper {
-
-    private static Logger logger = LoggerFactory.getLogger(JobRegistryHelper.class);
 
     private static JobRegistryHelper instance = new JobRegistryHelper();
 
@@ -62,7 +68,7 @@ public class JobRegistryHelper {
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
                         // 其实就是把被拒绝的任务再执行一遍
                         r.run();
-                        logger.warn(">>>>>>>>>>> xxl-job, registry or remove too fast, match threadpool rejected " +
+                        log.warn(">>>>>>>>>>> xxl-job, registry or remove too fast, match threadpool rejected " +
                                 "handler(run now).");
                     }
                 });
@@ -77,8 +83,7 @@ public class JobRegistryHelper {
                         // 这里查询的是所有自动注册的执行器组，手动录入的执行器不在此查询范围内，所谓自动注册，就是执行器启动时通过http把注册
                         // 信息发送到调度中心的注册方式，并不是用户在web界面手动录入的注册方式
                         // 【注意】这里查询的是执行器组，还不是单个的执行器
-                        List<XxlJobGroup> groupList =
-								XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().findByAddressType(0);
+                        List<XxlJobGroup> groupList = XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().findByAddressType(0);
                         if (groupList != null && !groupList.isEmpty()) {
                             // 这里的逻辑其实还要去对应的Mapper中查看：
                             // WHERE t.update_time < DATE_ADD(#{nowTime}, INTERVAL -#{timeout} SECOND)
@@ -86,8 +91,7 @@ public class JobRegistryHelper {
                             // 执行器的超时时间就是90s，只要在90s内，执行器没有再更新自己的信息，就意味着它停机了，而在执行器那一端，
                             // 是每30s就重新注册一次到注册中心
                             // 【注意】这里并没有区分是手动注册还是自动注册，只要是超时了的执行器都检测出来，然后从数据库中删除即可
-                            List<Integer> ids =
-									XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findDead(RegistryConfig.DEAD_TIMEOUT, new Date());
+                            List<Integer> ids = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findDead(RegistryConfig.DEAD_TIMEOUT, new Date());
                             if (ids != null && ids.size() > 0) {
                                 // 根据过期执行器的id直接删除执行器
                                 XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().removeDead(ids);
@@ -98,8 +102,7 @@ public class JobRegistryHelper {
                             // 这里查出的就是所有没有过期的执行器，同样不考虑注册类型，是否自动注册或手动录入，对应的SQL如下：
                             // WHERE t.update_time > DATE_ADD(#{nowTime},INTERVAL -#{timeout} SECOND)
                             // 就是把小于号改成了大于号
-                            List<XxlJobRegistry> list =
-									XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findAll(RegistryConfig.DEAD_TIMEOUT, new Date());
+                            List<XxlJobRegistry> list = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findAll(RegistryConfig.DEAD_TIMEOUT, new Date());
                             if (list != null) {
                                 // 走到这里说明数据库中存在没有超时的执行器数据
                                 for (XxlJobRegistry item : list) {
@@ -160,7 +163,7 @@ public class JobRegistryHelper {
                         }
                     } catch (Exception e) {
                         if (!toStop) {
-                            logger.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e);
+                            log.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e);
                         }
                     }
                     try {
@@ -168,11 +171,11 @@ public class JobRegistryHelper {
                         TimeUnit.SECONDS.sleep(RegistryConfig.BEAT_TIMEOUT);
                     } catch (InterruptedException e) {
                         if (!toStop) {
-                            logger.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e);
+                            log.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e);
                         }
                     }
                 }
-                logger.info(">>>>>>>>>>> xxl-job, job registry monitor thread stop");
+                log.info(">>>>>>>>>>> xxl-job, job registry monitor thread stop");
             }
         });
         registryMonitorThread.setDaemon(true);
@@ -190,7 +193,7 @@ public class JobRegistryHelper {
         try {
             registryMonitorThread.join();
         } catch (InterruptedException e) {
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -214,14 +217,10 @@ public class JobRegistryHelper {
                 // 这里的意思很简单，就是先根据registryParam的参数去数据库中更新相应的数据
                 // 如果返回的是0，说明数据库中没有相应的信息，该执行器还没注册到注册中心，
                 // 所以下面就可以直接新增这一条数据即可
-                int ret = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao()
-                        .registryUpdate(registryParam.getRegistryGroup(), registryParam.getRegistryKey(),
-								registryParam.getRegistryValue(), new Date());
+                int ret = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().registryUpdate(registryParam.getRegistryGroup(), registryParam.getRegistryKey(), registryParam.getRegistryValue(), new Date());
                 if (ret < 1) {
                     // 这里就是数据库中没有相应的数据，直接新增即可
-                    XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao()
-                            .registrySave(registryParam.getRegistryGroup(), registryParam.getRegistryKey(),
-									registryParam.getRegistryValue(), new Date());
+                    XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().registrySave(registryParam.getRegistryGroup(), registryParam.getRegistryKey(), registryParam.getRegistryValue(), new Date());
 
                     // 该方法从名字上看是刷新注册表信息的意思，但是暂时还没实现
                     freshGroupRegistryInfo(registryParam);

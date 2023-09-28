@@ -5,21 +5,19 @@ import com.xxl.job.core.biz.model.RegistryParam;
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.enums.RegistryConfig;
 import com.xxl.job.core.executor.XxlJobExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>执行器一端进行远程注册的类，将执行器注册到调度中心</h1>
- *
- * Created by xuxueli on 17/3/2.
  */
+@Slf4j
 public class ExecutorRegistryThread {
-    private static Logger logger = LoggerFactory.getLogger(ExecutorRegistryThread.class);
 
     private static ExecutorRegistryThread instance = new ExecutorRegistryThread();
-    public static ExecutorRegistryThread getInstance(){
+
+    public static ExecutorRegistryThread getInstance() {
         return instance;
     }
 
@@ -35,15 +33,15 @@ public class ExecutorRegistryThread {
     /**
      * <h2>启动注册线程</h2>
      */
-    public void start(final String appname, final String address){
+    public void start(final String appname, final String address) {
         // 对 appName 判空，这个就是执行器要记录在调度中心的名称
-        if (appname==null || appname.trim().length()==0) {
-            logger.warn(">>>>>>>>>>> xxl-job, executor registry config fail, appname is null.");
+        if (appname == null || appname.trim().length() == 0) {
+            log.warn(">>>>>>>>>>> xxl-job, executor registry config fail, appname is null.");
             return;
         }
         // 判断 adminBizList 集合不为空，因为个客户端是用来和调度中心通信的
         if (XxlJobExecutor.getAdminBizList() == null) {
-            logger.warn(">>>>>>>>>>> xxl-job, executor registry config fail, adminAddresses is null.");
+            log.warn(">>>>>>>>>>> xxl-job, executor registry config fail, adminAddresses is null.");
             return;
         }
 
@@ -54,29 +52,32 @@ public class ExecutorRegistryThread {
                 while (!toStop) {
                     try {
                         //根据 appName 和 address 创建注册参数，注意，这里的 address 是执行器的地址，只有一个，别和调度中心的地址搞混了
-                        RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(), appname, address);
+                        RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(),
+                                appname, address);
                         // 这里考虑到调度中心也许是以集群的形式存在，所以从集合中得到每一个和调度中心通话地客户端，然后发送注册消息即可
-                        for (AdminBiz adminBiz: XxlJobExecutor.getAdminBizList()) {
+                        for (AdminBiz adminBiz : XxlJobExecutor.getAdminBizList()) {
                             try {
                                 // 在这里执行注册
                                 ReturnT<String> registryResult = adminBiz.registry(registryParam);
-                                if (registryResult!=null && ReturnT.SUCCESS_CODE == registryResult.getCode()) {
+                                if (registryResult != null && ReturnT.SUCCESS_CODE == registryResult.getCode()) {
                                     registryResult = ReturnT.SUCCESS;
-                                    logger.debug(">>>>>>>>>>> xxl-job registry success, registryParam:{}, registryResult:{}", new Object[]{registryParam, registryResult});
+                                    log.debug(">>>>>>>>>>> xxl-job registry success, registryParam:{}, " +
+                                            "registryResult:{}", new Object[]{registryParam, registryResult});
                                     // 注册成功则打破循环，因为注册成功一个后，调度中心就把相应的数据写到数据库中了，
                                     // 没必要每个都注册，直接退出循环即可，注册不成功，再找下一个注册中心继续注册
                                     break;
                                 } else {
-                                    logger.info(">>>>>>>>>>> xxl-job registry fail, registryParam:{}, registryResult:{}", new Object[]{registryParam, registryResult});
+                                    log.info(">>>>>>>>>>> xxl-job registry fail, registryParam:{}, registryResult:{}"
+                                            , new Object[]{registryParam, registryResult});
                                 }
                             } catch (Exception e) {
-                                logger.info(">>>>>>>>>>> xxl-job registry error, registryParam:{}", registryParam, e);
+                                log.info(">>>>>>>>>>> xxl-job registry error, registryParam:{}", registryParam, e);
                             }
 
                         }
                     } catch (Exception e) {
                         if (!toStop) {
-                            logger.error(e.getMessage(), e);
+                            log.error(e.getMessage(), e);
                         }
 
                     }
@@ -88,7 +89,8 @@ public class ExecutorRegistryThread {
                         }
                     } catch (InterruptedException e) {
                         if (!toStop) {
-                            logger.warn(">>>>>>>>>>> xxl-job, executor registry thread interrupted, error msg:{}", e.getMessage());
+                            log.warn(">>>>>>>>>>> xxl-job, executor registry thread interrupted, error msg:{}",
+                                    e.getMessage());
                         }
                     }
                 }
@@ -101,21 +103,25 @@ public class ExecutorRegistryThread {
                         给调度中心
                      */
                     // 再次创建注册参数对象
-                    RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(), appname, address);
-                    for (AdminBiz adminBiz: XxlJobExecutor.getAdminBizList()) {
+                    RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(),
+                            appname, address);
+                    for (AdminBiz adminBiz : XxlJobExecutor.getAdminBizList()) {
                         try {
                             // 在这里发送删除执行器的信息
                             ReturnT<String> registryResult = adminBiz.registryRemove(registryParam);
-                            if (registryResult!=null && ReturnT.SUCCESS_CODE == registryResult.getCode()) {
+                            if (registryResult != null && ReturnT.SUCCESS_CODE == registryResult.getCode()) {
                                 registryResult = ReturnT.SUCCESS;
-                                logger.info(">>>>>>>>>>> xxl-job registry-remove success, registryParam:{}, registryResult:{}", new Object[]{registryParam, registryResult});
+                                log.info(">>>>>>>>>>> xxl-job registry-remove success, registryParam:{}, " +
+                                        "registryResult:{}", new Object[]{registryParam, registryResult});
                                 break;
                             } else {
-                                logger.info(">>>>>>>>>>> xxl-job registry-remove fail, registryParam:{}, registryResult:{}", new Object[]{registryParam, registryResult});
+                                log.info(">>>>>>>>>>> xxl-job registry-remove fail, registryParam:{}, " +
+                                        "registryResult:{}", new Object[]{registryParam, registryResult});
                             }
                         } catch (Exception e) {
                             if (!toStop) {
-                                logger.info(">>>>>>>>>>> xxl-job registry-remove error, registryParam:{}", registryParam, e);
+                                log.info(">>>>>>>>>>> xxl-job registry-remove error, registryParam:{}", registryParam
+                                        , e);
                             }
 
                         }
@@ -123,10 +129,10 @@ public class ExecutorRegistryThread {
                     }
                 } catch (Exception e) {
                     if (!toStop) {
-                        logger.error(e.getMessage(), e);
+                        log.error(e.getMessage(), e);
                     }
                 }
-                logger.info(">>>>>>>>>>> xxl-job, executor registry thread destroy.");
+                log.info(">>>>>>>>>>> xxl-job, executor registry thread destroy.");
 
             }
         });
@@ -149,7 +155,7 @@ public class ExecutorRegistryThread {
                 // 在在哪个线程中调用了注册线程的join方法，哪个线程就会暂时阻塞住，等待注册线程执行完了才会继续向下执行
                 registryThread.join();
             } catch (InterruptedException e) {
-                logger.error(e.getMessage(), e);
+                log.error(e.getMessage(), e);
             }
         }
 

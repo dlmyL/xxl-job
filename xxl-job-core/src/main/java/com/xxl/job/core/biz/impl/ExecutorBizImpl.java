@@ -1,7 +1,12 @@
 package com.xxl.job.core.biz.impl;
 
 import com.xxl.job.core.biz.ExecutorBiz;
-import com.xxl.job.core.biz.model.*;
+import com.xxl.job.core.biz.model.IdleBeatParam;
+import com.xxl.job.core.biz.model.KillParam;
+import com.xxl.job.core.biz.model.LogParam;
+import com.xxl.job.core.biz.model.LogResult;
+import com.xxl.job.core.biz.model.ReturnT;
+import com.xxl.job.core.biz.model.TriggerParam;
 import com.xxl.job.core.enums.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.executor.XxlJobExecutor;
 import com.xxl.job.core.glue.GlueFactory;
@@ -11,18 +16,15 @@ import com.xxl.job.core.handler.impl.GlueJobHandler;
 import com.xxl.job.core.handler.impl.ScriptJobHandler;
 import com.xxl.job.core.log.XxlJobFileAppender;
 import com.xxl.job.core.thread.JobThread;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Date;
 
 /**
  * <h1>该类就是在执行器端进行定时任务调用的类</h1>
- *
- * Created by xuxueli on 17/3/1.
  */
+@Slf4j
 public class ExecutorBizImpl implements ExecutorBiz {
-    private static Logger logger = LoggerFactory.getLogger(ExecutorBizImpl.class);
 
     /**
      * <h2>心跳检测的方法</h2>
@@ -48,7 +50,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
         // 这时候就说明调度的任务还没有被执行，肯定在队列里面，或者是正在执行
         // 总之，当前执行器比较繁忙
         if (isRunningOrHasQueue) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, "job thread is running or has trigger queue.");
+            return new ReturnT<>(ReturnT.FAIL_CODE, "job thread is running or has trigger queue.");
         }
         return ReturnT.SUCCESS;
     }
@@ -61,7 +63,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
         // 通过定时任务的 ID 从 jobThreadRepository 这个 Map 中获取一个具体的用来执行定时任务的线程
         JobThread jobThread = XxlJobExecutor.loadJobThread(triggerParam.getJobId());
         // 判断该 jobThread 是否为空，不为空则说明该定时任务不是第一次执行了，也就意味着该线程已经被分配了定时任务，就是这个 JobHandler
-        IJobHandler jobHandler = jobThread!=null?jobThread.getHandler():null;
+        IJobHandler jobHandler = jobThread != null ? jobThread.getHandler() : null;
         // 这个变量记录的是移除旧的工作线程的原因
         String removeOldReason = null;
         // 得到定时任务的调度模式
@@ -75,7 +77,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
             的线程，但是根据定时任务的名字从 jobHandlerRepository 中得到封装定时任务方法的对象却和 JobHandler 不相同，
             说明定时任务已经变了
              */
-            if (jobThread!=null && jobHandler != newJobHandler) {
+            if (jobThread != null && jobHandler != newJobHandler) {
                 // 走到这里就意味着定时任务已经改变了， 要做出相应处理，需要把旧的线程杀死
                 removeOldReason = "change jobhandler or glue type, and terminate the old job thread.";
                 // 执行定时任务的线程和封装定时任务方法的对象都置为 null
@@ -95,7 +97,8 @@ public class ExecutorBizImpl implements ExecutorBiz {
                     经过上面的赋值，走到这里如果 jobHandler 仍然为 null，那么只有一个原因，就是执行器这一端根本就没有
                     对应的定时任务，通过执行器的名字根本从 jobHandlerRepository 这个 Map 中找不到要被执行的定时任务
                      */
-                    return new ReturnT<>(ReturnT.FAIL_CODE, "job handler [" + triggerParam.getExecutorHandler() + "] not found.");
+                    return new ReturnT<>(ReturnT.FAIL_CODE, "job handler [" + triggerParam.getExecutorHandler() + "] " +
+                            "not found.");
                 }
             }
 
@@ -108,7 +111,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
              */
             if (jobThread != null &&
                     !(jobThread.getHandler() instanceof GlueJobHandler
-                        && ((GlueJobHandler) jobThread.getHandler()).getGlueUpdatetime()==triggerParam.getGlueUpdatetime() )) {
+                            && ((GlueJobHandler) jobThread.getHandler()).getGlueUpdatetime() == triggerParam.getGlueUpdatetime())) {
                 removeOldReason = "change job source or glue type, and terminate the old job thread.";
                 jobThread = null;
                 jobHandler = null;
@@ -116,23 +119,25 @@ public class ExecutorBizImpl implements ExecutorBiz {
             if (jobHandler == null) {
                 try {
                     // 这里创建新的 handler
-                    IJobHandler originJobHandler = GlueFactory.getInstance().loadNewInstance(triggerParam.getGlueSource());
+                    IJobHandler originJobHandler =
+                            GlueFactory.getInstance().loadNewInstance(triggerParam.getGlueSource());
                     jobHandler = new GlueJobHandler(originJobHandler, triggerParam.getGlueUpdatetime());
                 } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
-                    return new ReturnT<String>(ReturnT.FAIL_CODE, e.getMessage());
+                    log.error(e.getMessage(), e);
+                    return new ReturnT<>(ReturnT.FAIL_CODE, e.getMessage());
                 }
             }
-        } else if (glueTypeEnum!=null && glueTypeEnum.isScript()) {
+        } else if (glueTypeEnum != null && glueTypeEnum.isScript()) {
             if (jobThread != null &&
                     !(jobThread.getHandler() instanceof ScriptJobHandler
-                            && ((ScriptJobHandler) jobThread.getHandler()).getGlueUpdatetime()==triggerParam.getGlueUpdatetime() )) {
+                            && ((ScriptJobHandler) jobThread.getHandler()).getGlueUpdatetime() == triggerParam.getGlueUpdatetime())) {
                 removeOldReason = "change job source or glue type, and terminate the old job thread.";
                 jobThread = null;
                 jobHandler = null;
             }
             if (jobHandler == null) {
-                jobHandler = new ScriptJobHandler(triggerParam.getJobId(), triggerParam.getGlueUpdatetime(), triggerParam.getGlueSource(), GlueTypeEnum.match(triggerParam.getGlueType()));
+                jobHandler = new ScriptJobHandler(triggerParam.getJobId(), triggerParam.getGlueUpdatetime(),
+                        triggerParam.getGlueSource(), GlueTypeEnum.match(triggerParam.getGlueType()));
             }
         } else {
             // 如果没有合适的调度模式，就返回调用失败的信息
@@ -142,7 +147,8 @@ public class ExecutorBizImpl implements ExecutorBiz {
         // 走到这里只是判断 jobThread 不为 null，说明执行器端已经为该定时任务创建了工作线程
         if (jobThread != null) {
             // 得到定时任务的阻塞策略
-            ExecutorBlockStrategyEnum blockStrategy = ExecutorBlockStrategyEnum.match(triggerParam.getExecutorBlockStrategy(), null);
+            ExecutorBlockStrategyEnum blockStrategy =
+                    ExecutorBlockStrategyEnum.match(triggerParam.getExecutorBlockStrategy(), null);
             if (ExecutorBlockStrategyEnum.DISCARD_LATER == blockStrategy) {
                 /*
                 走到这里说明定时任务的阻塞队列直接为丢弃
@@ -151,7 +157,8 @@ public class ExecutorBizImpl implements ExecutorBiz {
                  */
                 if (jobThread.isRunningOrHasQueue()) {
                     // 因为阻塞策略是直接丢弃的，所以直接返回失败结果
-                    return new ReturnT<String>(ReturnT.FAIL_CODE, "block strategy effect："+ExecutorBlockStrategyEnum.DISCARD_LATER.getTitle());
+                    return new ReturnT<String>(ReturnT.FAIL_CODE,
+                            "block strategy effect：" + ExecutorBlockStrategyEnum.DISCARD_LATER.getTitle());
                 }
             } else if (ExecutorBlockStrategyEnum.COVER_EARLY == blockStrategy) {
                 // 走到这里说明阻塞策略为覆盖，覆盖的意思就是旧的任务不执行了，直接执行这个新的定时任务
@@ -196,7 +203,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
             return ReturnT.SUCCESS;
         }
         // 返回成功的结果
-        return new ReturnT<String>(ReturnT.SUCCESS_CODE, "job thread already killed.");
+        return new ReturnT<>(ReturnT.SUCCESS_CODE, "job thread already killed.");
     }
 
     /**
@@ -205,11 +212,12 @@ public class ExecutorBizImpl implements ExecutorBiz {
     @Override
     public ReturnT<LogResult> log(LogParam logParam) {
         // 根据定时任务 ID 和触发时间创建文件名
-        String logFileName = XxlJobFileAppender.makeLogFileName(new Date(logParam.getLogDateTim()), logParam.getLogId());
+        String logFileName = XxlJobFileAppender.makeLogFileName(new Date(logParam.getLogDateTim()),
+                logParam.getLogId());
         // 开始从日志文件中读取日志
         LogResult logResult = XxlJobFileAppender.readLog(logFileName, logParam.getFromLineNum());
         // 返回结果
-        return new ReturnT<LogResult>(logResult);
+        return new ReturnT<>(logResult);
     }
 
 }

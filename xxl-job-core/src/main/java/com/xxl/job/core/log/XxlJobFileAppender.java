@@ -1,20 +1,23 @@
 package com.xxl.job.core.log;
 
 import com.xxl.job.core.biz.model.LogResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
  * <h1>该类是操作日志的类，对日志文件进行操作的功能全部封装在这里</h1>
- *
- * @author xuxueli 2016-3-12 19:25:12
  */
+@Slf4j
 public class XxlJobFileAppender {
-	private static Logger logger = LoggerFactory.getLogger(XxlJobFileAppender.class);
 
 	/**
 	 * 默认的日志存储路径，但是在执行器启动的时候，该路径会被用户在
@@ -103,7 +106,7 @@ public class XxlJobFileAppender {
 			try {
 				logFile.createNewFile();
 			} catch (IOException e) {
-				logger.error(e.getMessage(), e);
+				log.error(e.getMessage(), e);
 				return;
 			}
 		}
@@ -121,13 +124,13 @@ public class XxlJobFileAppender {
 			fos.write(appendLog.getBytes("utf-8"));
 			fos.flush();
 		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
+			log.error(e.getMessage(), e);
 		} finally {
 			if (fos != null) {
 				try {
 					fos.close();
 				} catch (IOException e) {
-					logger.error(e.getMessage(), e);
+					log.error(e.getMessage(), e);
 				}
 			}
 		}
@@ -165,13 +168,13 @@ public class XxlJobFileAppender {
 				}
 			}
 		} catch (IOException e) {
-			logger.error(e.getMessage(), e);
+			log.error(e.getMessage(), e);
 		} finally {
 			if (reader != null) {
 				try {
 					reader.close();
 				} catch (IOException e) {
-					logger.error(e.getMessage(), e);
+					log.error(e.getMessage(), e);
 				}
 			}
 		}
@@ -204,13 +207,13 @@ public class XxlJobFileAppender {
 				return sb.toString();
 			}
 		} catch (IOException e) {
-			logger.error(e.getMessage(), e);
+			log.error(e.getMessage(), e);
 		} finally {
 			if (reader != null) {
 				try {
 					reader.close();
 				} catch (IOException e) {
-					logger.error(e.getMessage(), e);
+					log.error(e.getMessage(), e);
 				}
 			}
 		}

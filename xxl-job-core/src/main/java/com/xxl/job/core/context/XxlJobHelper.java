@@ -13,8 +13,6 @@ import java.util.Date;
 
 /**
  * <h1>这个类的功能就是对执行器产生的数据进行处理</h1>
- *
- * @author xuxueli 2020-11-05
  */
 public class XxlJobHelper {
 

@@ -14,9 +14,8 @@ import java.util.TreeMap;
 /**
  * <h1>哈希一致性路由策略</h1>
  * 分组下机器地址相同，不同JOB均匀散列在不同机器上，保证分组下机器分配JOB平均；且每个JOB固定调度其中一台机器；
- *      a、virtual node：解决不均衡问题
- *      b、hash method replace hashCode：String的hashCode可能重复，需要进一步扩大hashCode的取值范围
- * Created by xuxueli on 17/3/10.
+ * a、virtual node：解决不均衡问题
+ * b、hash method replace hashCode：String的hashCode可能重复，需要进一步扩大hashCode的取值范围
  */
 public class ExecutorRouteConsistentHash extends ExecutorRouter {
 
@@ -68,7 +67,7 @@ public class ExecutorRouteConsistentHash extends ExecutorRouter {
         // ------A1------A2-------A3------
         // -----------J1------------------
         TreeMap<Long, String> addressRing = new TreeMap<Long, String>();
-        for (String address: addressList) {
+        for (String address : addressList) {
             for (int i = 0; i < VIRTUAL_NODE_NUM; i++) {
                 // 计算执行器地址的哈希值
                 long addressHash = hash("SHARD-" + address + "-NODE-" + i);
@@ -93,7 +92,7 @@ public class ExecutorRouteConsistentHash extends ExecutorRouter {
     @Override
     public ReturnT<String> route(TriggerParam triggerParam, List<String> addressList) {
         String address = hashJob(triggerParam.getJobId(), addressList);
-        return new ReturnT<String>(address);
+        return new ReturnT<>(address);
     }
 
 }

@@ -7,19 +7,21 @@ import com.xxl.job.admin.core.util.I18nUtil;
 import com.xxl.job.core.biz.model.HandleCallbackParam;
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.util.DateUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>调度中心接收执行器回调信息的工作组件</h1>
  */
+@Slf4j
 public class JobCompleteHelper {
-
-    private static Logger logger = LoggerFactory.getLogger(JobCompleteHelper.class);
 
     private static JobCompleteHelper instance = new JobCompleteHelper();
 
@@ -54,7 +56,7 @@ public class JobCompleteHelper {
                     @Override
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
                         r.run();
-                        logger.warn(">>>>>>>>>>> xxl-job, callback too fast, match threadpool rejected handler(run " +
+                        log.warn(">>>>>>>>>>> xxl-job, callback too fast, match threadpool rejected handler(run " +
 								"now).");
                     }
                 });
@@ -70,48 +72,59 @@ public class JobCompleteHelper {
                     TimeUnit.MILLISECONDS.sleep(50);
                 } catch (InterruptedException e) {
                     if (!toStop) {
-                        logger.error(e.getMessage(), e);
+                        log.error(e.getMessage(), e);
                     }
                 }
                 while (!toStop) {
                     try {
-                        // 任务结果丢失处理：调度记录停留在 "运行中" 状态超过10min，且对应执行器心跳注册失败不在线，则将本地调度主动标记失败；
+                        // 这里得到一个时间信息，就是当前时间向前10分钟的时间
+                        // 这里传进去的参数-10，就是减10分钟的意思
                         Date losedTime = DateUtil.addMinutes(new Date(), -10);
-                        List<Long> losedJobIds =
-								XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().findLostJobIds(losedTime);
-
+                        /*
+                        这里最后对应的就是这条SQL：
+                            SELECT t.id
+                            FROM xxl_job_log t
+                                LEFT JOIN xxl_job_registry t2 ON t.executor_address = t2.registry_value
+                            WHERE
+                                t.trigger_code = 200
+                                    AND t.handle_code = 0
+                                    AND t.trigger_time <=  #{losedTime}
+                                    AND t2.id IS NULL;
+                         其实就是判断了一下，现在数据库中XxlJobLog的触发时间，其实就可以当做定时任务在调度中心开始执行的那个时间，
+                         这里其实就是把当前时间前十分钟内提交执行的定时任务，但是始终没有得到执行器回调的执行结果的定时任务全找出来了，
+                         因为t.handle_code=0，并且注册表中也没有对应的数据了，说明心跳断了
+                         具体的方法在XxlJobLogMapper中
+                         */
+                        List<Long> losedJobIds = XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().findLostJobIds(losedTime);
                         if (losedJobIds != null && losedJobIds.size() > 0) {
                             for (Long logId : losedJobIds) {
-
+                                // 开始遍历定时任务
                                 XxlJobLog jobLog = new XxlJobLog();
                                 jobLog.setId(logId);
-
+                                // 设置执行时间
                                 jobLog.setHandleTime(new Date());
+                                // 设置失败状态
                                 jobLog.setHandleCode(ReturnT.FAIL_CODE);
                                 jobLog.setHandleMsg(I18nUtil.getString("joblog_lost_fail"));
-
+                                // 更新失败的定时任务状态
                                 XxlJobCompleter.updateHandleInfoAndFinish(jobLog);
                             }
-
                         }
                     } catch (Exception e) {
                         if (!toStop) {
-                            logger.error(">>>>>>>>>>> xxl-job, job fail monitor thread error:{}", e);
+                            log.error(">>>>>>>>>>> xxl-job, job fail monitor thread error:{}", e);
                         }
                     }
-
                     try {
+                        // 每60s工作一次
                         TimeUnit.SECONDS.sleep(60);
                     } catch (Exception e) {
                         if (!toStop) {
-                            logger.error(e.getMessage(), e);
+                            log.error(e.getMessage(), e);
                         }
                     }
-
                 }
-
-                logger.info(">>>>>>>>>>> xxl-job, JobLosedMonitorHelper stop");
-
+                log.info(">>>>>>>>>>> xxl-job, JobLosedMonitorHelper stop");
             }
         });
         monitorThread.setDaemon(true);
@@ -121,49 +134,54 @@ public class JobCompleteHelper {
 
     public void toStop() {
         toStop = true;
-
-        // stop registryOrRemoveThreadPool
         callbackThreadPool.shutdownNow();
-
-        // stop monitorThread (interrupt and wait)
         monitorThread.interrupt();
         try {
             monitorThread.join();
         } catch (InterruptedException e) {
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
         }
     }
 
 
     // ---------------------- helper ----------------------
 
+    /**
+     * 处理回调信息的方法
+     */
     public ReturnT<String> callback(List<HandleCallbackParam> callbackParamList) {
-
         callbackThreadPool.execute(new Runnable() {
             @Override
             public void run() {
                 for (HandleCallbackParam handleCallbackParam : callbackParamList) {
+                    // EXEC 
+                    // 在这里处理每一个回调的信息
                     ReturnT<String> callbackResult = callback(handleCallbackParam);
-                    logger.debug(">>>>>>>>> JobApiController.callback {}, handleCallbackParam={}, callbackResult={}",
-                            (callbackResult.getCode() == ReturnT.SUCCESS_CODE ? "success" : "fail"), handleCallbackParam, callbackResult);
+                    log.debug(">>>>>>>>> JobApiController.callback {}, handleCallbackParam={}, callbackResult={}", (callbackResult.getCode() == ReturnT.SUCCESS_CODE ? "success" : "fail"), handleCallbackParam, callbackResult);
                 }
             }
         });
-
         return ReturnT.SUCCESS;
     }
 
+    /**
+     * 真正处理回调信息的方法
+     */
     private ReturnT<String> callback(HandleCallbackParam handleCallbackParam) {
-        // valid log item
+        // 得到对应的XxlJobLog对象
         XxlJobLog log = XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().load(handleCallbackParam.getLogId());
         if (log == null) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, "log item not found.");
+            return new ReturnT<>(ReturnT.FAIL_CODE, "log item not found.");
         }
+        /*
+        判断日志对象的处理结果码
+        因为这个响应码无论是哪种情况都是大于0的，如果大于0了，说明已经回调一次了
+        如果等于0，说明还没得到回调信息，任务也可能还处于运行中的状态
+         */
         if (log.getHandleCode() > 0) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, "log repeate callback.");     // avoid repeat callback, trigger child job etc
+            return new ReturnT<>(ReturnT.FAIL_CODE, "log repeate callback.");     // avoid repeat callback, trigger child job etc
         }
-
-        // handle msg
+        // 拼接信息
         StringBuffer handleMsg = new StringBuffer();
         if (log.getHandleMsg() != null) {
             handleMsg.append(log.getHandleMsg()).append("<br>");
@@ -171,15 +189,12 @@ public class JobCompleteHelper {
         if (handleCallbackParam.getHandleMsg() != null) {
             handleMsg.append(handleCallbackParam.getHandleMsg());
         }
-
-        // success, save log
         log.setHandleTime(new Date());
         log.setHandleCode(handleCallbackParam.getHandleCode());
         log.setHandleMsg(handleMsg.toString());
+        // 更新数据库中的日志信息
         XxlJobCompleter.updateHandleInfoAndFinish(log);
-
         return ReturnT.SUCCESS;
     }
-
 
 }

@@ -9,18 +9,11 @@ import java.util.List;
 
 /**
  * <h1>路由策略抽象类</h1>
- *
- * Created by xuxueli on 17/3/10.
  */
 public abstract class ExecutorRouter {
+
     protected static Logger logger = LoggerFactory.getLogger(ExecutorRouter.class);
 
-    /**
-     * route address
-     *
-     * @param addressList
-     * @return  ReturnT.content=address
-     */
     public abstract ReturnT<String> route(TriggerParam triggerParam, List<String> addressList);
 
 }

@@ -4,6 +4,7 @@ import com.xxl.job.admin.controller.annotation.PermissionLimit;
 import com.xxl.job.admin.service.LoginService;
 import com.xxl.job.admin.service.XxlJobService;
 import com.xxl.job.core.biz.model.ReturnT;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.text.SimpleDateFormat;
@@ -24,16 +24,13 @@ import java.util.Map;
 
 /**
  * <h1>这个类对应运行报表那个界面</h1>
- *
- * @author xuxueli 2015-12-19 16:13:16
  */
 @Controller
+@RequiredArgsConstructor
 public class IndexController {
 
-	@Resource
-	private XxlJobService xxlJobService;
-	@Resource
-	private LoginService loginService;
+	private final XxlJobService xxlJobService;
+	private final LoginService loginService;
 
 	/**
 	 * <h2>首页</h2>

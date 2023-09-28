@@ -12,8 +12,8 @@ import com.xxl.job.core.thread.JobThread;
 import com.xxl.job.core.thread.TriggerCallbackThread;
 import com.xxl.job.core.util.IpUtil;
 import com.xxl.job.core.util.NetUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -24,11 +24,10 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * <h1>执行器启动的入口类，其实是从子类中开始执行，但是子类会调用到父类的 start 方法，真正启动执行器组件</h1>
- *
- * Created by xuxueli on 2016/3/2 21:14.
  */
+@Slf4j
+@Setter
 public class XxlJobExecutor  {
-    private static final Logger logger = LoggerFactory.getLogger(XxlJobExecutor.class);
 
     // 下面这些成员变量都是定义在配置文件中的，而这里的属性会在用户自己定义的 XxlJobConfig 配置类中被赋值
 
@@ -64,34 +63,6 @@ public class XxlJobExecutor  {
      * 执行器日志的保留天数，一般为 30 天，在配置文件中可以自己设定
      */
     private int logRetentionDays;
-
-    // 下面这些方法都会在用户自己定义的 XxlJobConfig 类中被调用到
-
-    public void setAdminAddresses(String adminAddresses) {
-        this.adminAddresses = adminAddresses;
-    }
-    public void setAccessToken(String accessToken) {
-        this.accessToken = accessToken;
-    }
-    public void setAppname(String appname) {
-        this.appname = appname;
-    }
-    public void setAddress(String address) {
-        this.address = address;
-    }
-    public void setIp(String ip) {
-        this.ip = ip;
-    }
-    public void setPort(int port) {
-        this.port = port;
-    }
-    public void setLogPath(String logPath) {
-        this.logPath = logPath;
-    }
-    public void setLogRetentionDays(int logRetentionDays) {
-        this.logRetentionDays = logRetentionDays;
-    }
-
 
     // ---------------------- start + stop ----------------------
 
@@ -133,7 +104,7 @@ public class XxlJobExecutor  {
                     try {
                         oldJobThread.join();
                     } catch (InterruptedException e) {
-                        logger.error(">>>>>>>>>>> xxl-job, JobThread destroy(join) error, jobId:{}", item.getKey(), e);
+                        log.error(">>>>>>>>>>> xxl-job, JobThread destroy(join) error, jobId:{}", item.getKey(), e);
                     }
                 }
             }
@@ -206,7 +177,7 @@ public class XxlJobExecutor  {
 
         // 校验 TOKEN
         if (accessToken==null || accessToken.trim().length()==0) {
-            logger.warn(">>>>>>>>>>> xxl-job accessToken is empty. To ensure system security, please set the accessToken.");
+            log.warn(">>>>>>>>>>> xxl-job accessToken is empty. To ensure system security, please set the accessToken.");
         }
 
         // 创建执行器端的 Netty 服务器
@@ -224,7 +195,7 @@ public class XxlJobExecutor  {
             try {
                 embedServer.stop();
             } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+                log.error(e.getMessage(), e);
             }
         }
     }
@@ -239,7 +210,7 @@ public class XxlJobExecutor  {
         return jobHandlerRepository.get(name);
     }
     public static IJobHandler registJobHandler(String name, IJobHandler jobHandler){
-        logger.info(">>>>>>>>>>> xxl-job register jobhandler success, name:{}, jobHandler:{}", name, jobHandler);
+        log.info(">>>>>>>>>>> xxl-job register jobhandler success, name:{}, jobHandler:{}", name, jobHandler);
         return jobHandlerRepository.put(name, jobHandler);
     }
 
@@ -325,7 +296,7 @@ public class XxlJobExecutor  {
         JobThread newJobThread = new JobThread(jobId, handler);
         // 创建之后就启动线程
         newJobThread.start();
-        logger.info(">>>>>>>>>>> xxl-job regist JobThread success, jobId:{}, handler:{}", new Object[]{jobId, handler});
+        log.info(">>>>>>>>>>> xxl-job regist JobThread success, jobId:{}, handler:{}", new Object[]{jobId, handler});
 
         // 将该线程缓存到 Map 中
         JobThread oldJobThread = jobThreadRepository.put(jobId, newJobThread);	// putIfAbsent | oh my god, map's put method return the old value!!!

@@ -13,28 +13,21 @@ import com.xxl.job.core.biz.model.TriggerParam;
 import com.xxl.job.core.enums.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.util.IpUtil;
 import com.xxl.job.core.util.ThrowableUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Date;
 
 /**
- * KEYPOINT 远程调用执行器端的任务
- * <h1>
- *      这个类也是 xxl-job 中很重要的一个类，job 的远程调用就是在该类中进行的，当然不是直接进行，远程调用
- *      到最后，任务还是在执行器那边执行的，但是该类会为远程调用做很多必要的辅助性工作，比如选择路由策略，
- *      然后选择要执行的执行器地址
- * </h1>
+ * 这个类也是 xxl-job 中很重要的一个类，job 的远程调用就是在该类中进行的，当然不是直接进行，远程调用
+ * 到最后，任务还是在执行器那边执行的，但是该类会为远程调用做很多必要的辅助性工作，比如选择路由策略，
+ * 然后选择要执行的执行器地址
  */
+@Slf4j
 public class XxlJobTrigger {
 
-    private static Logger logger = LoggerFactory.getLogger(XxlJobTrigger.class);
-
     /**
-     * <h2>
-     *     该方法是远程调用前的准备阶段，在该方法内，如果用户自己设置了执行器的地址和执行器的任务参数，
-     *     以及分片策略，在该方法内会对这些操作进行处理
-     * </h2>
+     * 该方法是远程调用前的准备阶段，在该方法内，如果用户自己设置了执行器的地址和执行器的任务参数，
+     * 以及分片策略，在该方法内会对这些操作进行处理
      */
     public static void trigger(int jobId, TriggerTypeEnum triggerType,
                                int failRetryCount, String executorShardingParam,
@@ -43,7 +36,7 @@ public class XxlJobTrigger {
         XxlJobInfo jobInfo = XxlJobAdminConfig.getAdminConfig().getXxlJobInfoDao().loadById(jobId);
         // 如果任务为 null，则打印一条警告信息后直接退出
         if (jobInfo == null) {
-            logger.warn(">>>>>>>>>>>> trigger fail, jobId invalid，jobId={}", jobId);
+            log.warn(">>>>>>>>>>>> trigger fail, jobId invalid，jobId={}", jobId);
             return;
         }
         // 如果用户在页面选择执行任务的时候，传递参数进来了，这个时候就把任务参数设置到 job 中
@@ -52,14 +45,14 @@ public class XxlJobTrigger {
             jobInfo.setExecutorParam(executorParam);
         }
         // 得到用户设定的该任务的失败重试次数
-        int finalFailRetryCount = failRetryCount>=0?failRetryCount:jobInfo.getExecutorFailRetryCount();
+        int finalFailRetryCount = failRetryCount >= 0 ? failRetryCount : jobInfo.getExecutorFailRetryCount();
         // 根据 JobGroup 获取任务组，在生产环境中，一个定时任务不可能只有一个服务器在执行，对于相同的定时任务，注册到
         // xxl-job 的服务器上时，会把相同定时任务的服务实例地址规整到一起，就赋值给 XxlJobGroup 这个类的 addressList
         // 成员变量，不同的地址用逗号分隔
         XxlJobGroup group = XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().load(jobInfo.getJobGroup());
 
         // 如果用户在 web 界面输入了执行器的地址，这里就会把执行器的地址设置到刚才查询到的执行器中
-        if (addressList!=null && addressList.trim().length()>0) {
+        if (addressList != null && addressList.trim().length() > 0) {
             // 这里设置执行器地址的注册方式，0 是自动注册，1 是用户手动注册
             group.setAddressType(1);
             // 然后把用户在 web 界面输入的执行器地址覆盖原来的执行器地址
@@ -71,11 +64,11 @@ public class XxlJobTrigger {
         int[] shardingParam = null;
         // 如果用户设定的分片参数不为 null，其实这个参数一直是 null，不会给用户设定的机会
         // 是程序内部根据用户是否配置了分片广播策略来自动设定分片参数的
-        if (executorShardingParam!=null){
+        if (executorShardingParam != null) {
             // 如果参数不为 null，那就讲字符串分割一下，分割成 2 个
             String[] shardingArr = executorShardingParam.split("/");
             // 做一下校验
-            if (shardingArr.length==2 && isNumeric(shardingArr[0]) && isNumeric(shardingArr[1])) {
+            if (shardingArr.length == 2 && isNumeric(shardingArr[0]) && isNumeric(shardingArr[1])) {
                 // 在这里初始化数组，容量为 2 数组的第一个参数就是分片序号，也就是代表的几号执行器，数组第二位就是总的分片数
                 // 如果现在只有一台执行器在执行，那么数组一号位代表的就是 0 号执行器，2 号位代表队就是只有一个分片，因为只有一个执行器
                 shardingParam = new int[2];
@@ -85,8 +78,8 @@ public class XxlJobTrigger {
         }
 
         // ====== 分片广播的路由策略 ======
-        if (ExecutorRouteStrategyEnum.SHARDING_BROADCAST==ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null)
-                && group.getRegistryList()!=null && !group.getRegistryList().isEmpty() && shardingParam==null) {
+        if (ExecutorRouteStrategyEnum.SHARDING_BROADCAST == ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null)
+                && group.getRegistryList() != null && !group.getRegistryList().isEmpty() && shardingParam == null) {
             // 如果配置了分片广播的路由策略，那就遍历执行器组，并且根据执行器组中的所有执行器地址集合的容量来遍历
             // 这也意味着有几个执行器，就得遍历几次
             for (int i = 0; i < group.getRegistryList().size(); i++) {
@@ -114,27 +107,19 @@ public class XxlJobTrigger {
     }
 
     /**
-     * <h2>判断字符串的内容是不是数字</h2>
-     */
-    private static boolean isNumeric(String str){
-        try {
-            int result = Integer.valueOf(str);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    /**
      * <h2>在该方法中会进一步处理分片和路由策略</h2>
      */
-    private static void processTrigger(XxlJobGroup group, XxlJobInfo jobInfo, int finalFailRetryCount, TriggerTypeEnum triggerType, int index, int total){
+    private static void processTrigger(XxlJobGroup group, XxlJobInfo jobInfo, int finalFailRetryCount,
+                                       TriggerTypeEnum triggerType, int index, int total) {
         // 获得定时任务的阻塞策略，默认是串行
-        ExecutorBlockStrategyEnum blockStrategy = ExecutorBlockStrategyEnum.match(jobInfo.getExecutorBlockStrategy(), ExecutorBlockStrategyEnum.SERIAL_EXECUTION);
+        ExecutorBlockStrategyEnum blockStrategy = ExecutorBlockStrategyEnum.match(jobInfo.getExecutorBlockStrategy(),
+                ExecutorBlockStrategyEnum.SERIAL_EXECUTION);
         // 得到当前要调度的执行任务的路由策略，默认是没有
-        ExecutorRouteStrategyEnum executorRouteStrategyEnum = ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null);
+        ExecutorRouteStrategyEnum executorRouteStrategyEnum =
+                ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null);
         // 判断路由策略是否等于分片广播，如果等于，就把分片参数拼接成字符串
-        String shardingParam = (ExecutorRouteStrategyEnum.SHARDING_BROADCAST==executorRouteStrategyEnum)?String.valueOf(index).concat("/").concat(String.valueOf(total)):null;
+        String shardingParam = (ExecutorRouteStrategyEnum.SHARDING_BROADCAST == executorRouteStrategyEnum) ?
+                String.valueOf(index).concat("/").concat(String.valueOf(total)) : null;
 
         // ====== 1、定时任务日志处理 ======
         // 创建一个日志对象，用于记录该定时任务执行时的一些信息
@@ -147,7 +132,7 @@ public class XxlJobTrigger {
         jobLog.setTriggerTime(new Date());
         // 把定时任务日志保存到数据库中，保存成功之后，定时任务日志的 ID 也就有了
         XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().save(jobLog);
-        logger.debug(">>>>>>>>>>> xxl-job trigger start, jobId:{}", jobLog.getId());
+        log.debug(">>>>>>>>>>> xxl-job trigger start, jobId:{}", jobLog.getId());
 
         // ====== 2、初始化触发器参数 ======
         // 构建触发器参数对象，这个是要在执行器那一端进行使用的
@@ -180,7 +165,7 @@ public class XxlJobTrigger {
         // 这里考虑到了路由策略
         String address = null;
         ReturnT<String> routeAddressResult = null;
-        if (group.getRegistryList()!=null && !group.getRegistryList().isEmpty()) {
+        if (group.getRegistryList() != null && !group.getRegistryList().isEmpty()) {
             if (ExecutorRouteStrategyEnum.SHARDING_BROADCAST == executorRouteStrategyEnum) {
                 // 如果是分片广播，就用分片数组中的参数选取对应的执行器地址
                 if (index < group.getRegistryList().size()) {
@@ -198,7 +183,8 @@ public class XxlJobTrigger {
             }
         } else {
             // 如果没得到地址，就赋值失败
-            routeAddressResult = new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobconf_trigger_address_empty"));
+            routeAddressResult = new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString(
+                    "jobconf_trigger_address_empty"));
         }
 
         // ====== 4、远程调用 ======
@@ -216,18 +202,22 @@ public class XxlJobTrigger {
         triggerMsgSb.append(I18nUtil.getString("jobconf_trigger_type")).append("：").append(triggerType.getTitle());
         triggerMsgSb.append("<br>").append(I18nUtil.getString("jobconf_trigger_admin_adress")).append("：").append(IpUtil.getIp());
         triggerMsgSb.append("<br>").append(I18nUtil.getString("jobconf_trigger_exe_regtype")).append("：")
-                .append( (group.getAddressType() == 0)?I18nUtil.getString("jobgroup_field_addressType_0"):I18nUtil.getString("jobgroup_field_addressType_1") );
+                .append((group.getAddressType() == 0) ? I18nUtil.getString("jobgroup_field_addressType_0") :
+                        I18nUtil.getString("jobgroup_field_addressType_1"));
         triggerMsgSb.append("<br>").append(I18nUtil.getString("jobconf_trigger_exe_regaddress")).append("：").append(group.getRegistryList());
         triggerMsgSb.append("<br>").append(I18nUtil.getString("jobinfo_field_executorRouteStrategy")).append("：").append(executorRouteStrategyEnum.getTitle());
         if (shardingParam != null) {
-            triggerMsgSb.append("("+shardingParam+")");
+            triggerMsgSb.append("(" + shardingParam + ")");
         }
         triggerMsgSb.append("<br>").append(I18nUtil.getString("jobinfo_field_executorBlockStrategy")).append("：").append(blockStrategy.getTitle());
         triggerMsgSb.append("<br>").append(I18nUtil.getString("jobinfo_field_timeout")).append("：").append(jobInfo.getExecutorTimeout());
         triggerMsgSb.append("<br>").append(I18nUtil.getString("jobinfo_field_executorFailRetryCount")).append("：").append(finalFailRetryCount);
 
-        triggerMsgSb.append("<br><br><span style=\"color:#00c0ef;\" > >>>>>>>>>>>"+ I18nUtil.getString("jobconf_trigger_run") +"<<<<<<<<<<< </span><br>")
-                .append((routeAddressResult!=null&&routeAddressResult.getMsg()!=null)?routeAddressResult.getMsg()+"<br><br>":"").append(triggerResult.getMsg()!=null?triggerResult.getMsg():"");
+        triggerMsgSb.append("<br><br><span style=\"color:#00c0ef;\" > >>>>>>>>>>>" + I18nUtil.getString(
+                        "jobconf_trigger_run") + "<<<<<<<<<<< </span><br>")
+                .append((routeAddressResult != null && routeAddressResult.getMsg() != null) ?
+                        routeAddressResult.getMsg() + "<br><br>" : "").append(triggerResult.getMsg() != null ?
+                        triggerResult.getMsg() : "");
 
         // ====== 6、保存触发信息的日志 ======
         // 设置执行器地址
@@ -246,23 +236,23 @@ public class XxlJobTrigger {
         jobLog.setTriggerMsg(triggerMsgSb.toString());
         // 更新数据库信息
         XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().updateTriggerInfo(jobLog);
-        logger.debug(">>>>>>>>>>> xxl-job trigger end, jobId:{}", jobLog.getId());
+        log.debug(">>>>>>>>>>> xxl-job trigger end, jobId:{}", jobLog.getId());
     }
 
     /**
      * <h2>该方法内部进行远程调用</h2>
      */
-    public static ReturnT<String> runExecutor(TriggerParam triggerParam, String address){
+    public static ReturnT<String> runExecutor(TriggerParam triggerParam, String address) {
         ReturnT<String> runResult = null;
         try {
             // 获取一个用于远程调用的客户端对象，一个地址就对应着一个客户端，为什么说是客户端，因为远程调用的时候，执行器
             // 成为了服务器，因为执行器需要接收来自于客户端的调用消息
             ExecutorBiz executorBiz = XxlJobScheduler.getExecutorBiz(address);
-            // KEYPOINT 真正执行远程调用的地方
+            // EXEC ExecutorBizClient#run {执行器内嵌服务根地址}/run
             // 拿到客户端后，就在 run 方法内进行远程调用了
             runResult = executorBiz.run(triggerParam);
         } catch (Exception e) {
-            logger.error(">>>>>>>>>>> xxl-job trigger error, please check if the executor[{}] is running.", address, e);
+            log.error(">>>>>>>>>>> xxl-job trigger error, please check if the executor[{}] is running.", address, e);
             runResult = new ReturnT<>(ReturnT.FAIL_CODE, ThrowableUtil.toString(e));
         }
 
@@ -273,6 +263,19 @@ public class XxlJobTrigger {
         runResultSB.append("<br>msg：").append(runResult.getMsg());
         runResult.setMsg(runResultSB.toString());
         return runResult;
+    }
+
+
+    /**
+     * <h2>判断字符串的内容是不是数字</h2>
+     */
+    private static boolean isNumeric(String str) {
+        try {
+            int result = Integer.valueOf(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
 }

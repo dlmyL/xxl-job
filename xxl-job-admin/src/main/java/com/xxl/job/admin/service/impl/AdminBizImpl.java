@@ -12,8 +12,6 @@ import java.util.List;
 
 /**
  * <h1>这个类是调度中心要使用到的</h1>
- *
- * @author xuxueli 2017-07-27 21:54:20
  */
 @Service
 public class AdminBizImpl implements AdminBiz {
@@ -31,7 +29,6 @@ public class AdminBizImpl implements AdminBiz {
      */
     @Override
     public ReturnT<String> registry(RegistryParam registryParam) {
-        // 通过 JobRegistryHelper 组件中创建的线程池来完成注册任务
         return JobRegistryHelper.getInstance().registry(registryParam);
     }
 

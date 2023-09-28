@@ -12,8 +12,6 @@ import java.util.List;
 
 /**
  * <h1>忙碌转移策略</h1>
- *
- * Created by xuxueli on 17/3/10.
  */
 public class ExecutorRouteBusyover extends ExecutorRouter {
 
@@ -28,12 +26,13 @@ public class ExecutorRouteBusyover extends ExecutorRouter {
                 ExecutorBiz executorBiz = XxlJobScheduler.getExecutorBiz(address);
                 // 向客户端发送忙碌检测请求，判断该执行器的定时任务线程是否正在执行对应的定时任务
                 // 如果正在执行，说明比较忙碌，就不使用该地址了
+                // EXEC ExecutorBizClient#idleBeat  {执行器内嵌服务根地址}/idleBeat
                 idleBeatResult = executorBiz.idleBeat(new IdleBeatParam(triggerParam.getJobId()));
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
-                idleBeatResult = new ReturnT<String>(ReturnT.FAIL_CODE, ""+e );
+                idleBeatResult = new ReturnT<>(ReturnT.FAIL_CODE, "" + e);
             }
-            idleBeatResultSB.append( (idleBeatResultSB.length()>0)?"<br><br>":"")
+            idleBeatResultSB.append((idleBeatResultSB.length() > 0) ? "<br><br>" : "")
                     .append(I18nUtil.getString("jobconf_idleBeat") + "：")
                     .append("<br>address：").append(address)
                     .append("<br>code：").append(idleBeatResult.getCode())
@@ -47,7 +46,7 @@ public class ExecutorRouteBusyover extends ExecutorRouter {
             }
         }
 
-        return new ReturnT<String>(ReturnT.FAIL_CODE, idleBeatResultSB.toString());
+        return new ReturnT<>(ReturnT.FAIL_CODE, idleBeatResultSB.toString());
     }
 
 }

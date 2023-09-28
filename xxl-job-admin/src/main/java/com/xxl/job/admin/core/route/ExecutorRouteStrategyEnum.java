@@ -2,13 +2,15 @@ package com.xxl.job.admin.core.route;
 
 import com.xxl.job.admin.core.route.strategy.*;
 import com.xxl.job.admin.core.util.I18nUtil;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * <h1>路由策略枚举类</h1>
- *
- * Created by xuxueli on 17/3/10.
  */
+@AllArgsConstructor
 public enum ExecutorRouteStrategyEnum {
+
     // 使用第一个
     FIRST(I18nUtil.getString("jobconf_route_first"), new ExecutorRouteFirst()),
     // 使用最后一个
@@ -30,24 +32,14 @@ public enum ExecutorRouteStrategyEnum {
     // 分片广播
     SHARDING_BROADCAST(I18nUtil.getString("jobconf_route_shard"), null);
 
-    ExecutorRouteStrategyEnum(String title, ExecutorRouter router) {
-        this.title = title;
-        this.router = router;
-    }
+    @Getter
+    private final String title;
+    @Getter
+    private final ExecutorRouter router;
 
-    private String title;
-    private ExecutorRouter router;
-
-    public String getTitle() {
-        return title;
-    }
-    public ExecutorRouter getRouter() {
-        return router;
-    }
-
-    public static ExecutorRouteStrategyEnum match(String name, ExecutorRouteStrategyEnum defaultItem){
+    public static ExecutorRouteStrategyEnum match(String name, ExecutorRouteStrategyEnum defaultItem) {
         if (name != null) {
-            for (ExecutorRouteStrategyEnum item: ExecutorRouteStrategyEnum.values()) {
+            for (ExecutorRouteStrategyEnum item : ExecutorRouteStrategyEnum.values()) {
                 if (item.name().equals(name)) {
                     return item;
                 }

@@ -8,14 +8,12 @@ import java.util.List;
 
 /**
  * <h1>路由策略之一，选择集合中的第一个地址</h1>
- *
- * Created by xuxueli on 17/3/10.
  */
 public class ExecutorRouteFirst extends ExecutorRouter {
 
     @Override
-    public ReturnT<String> route(TriggerParam triggerParam, List<String> addressList){
-        return new ReturnT<String>(addressList.get(0));
+    public ReturnT<String> route(TriggerParam triggerParam, List<String> addressList) {
+        return new ReturnT<>(addressList.get(0));
     }
 
 }

@@ -11,8 +11,6 @@ import java.util.List;
 
 /**
  * <h1>故障转移策略</h1>
- *
- * Created by xuxueli on 17/3/10.
  */
 public class ExecutorRouteFailover extends ExecutorRouter {
 
@@ -26,12 +24,13 @@ public class ExecutorRouteFailover extends ExecutorRouter {
                 // 得到访问执行器的客户端
                 ExecutorBiz executorBiz = XxlJobScheduler.getExecutorBiz(address);
                 // 向执行器发送心跳检测请求，看执行器是否还在线
+                // EXEC ExecutorBizClient#beat {执行器内嵌服务根地址}/beat
                 beatResult = executorBiz.beat();
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
-                beatResult = new ReturnT<String>(ReturnT.FAIL_CODE, ""+e );
+                beatResult = new ReturnT<>(ReturnT.FAIL_CODE, "" + e);
             }
-            beatResultSB.append( (beatResultSB.length()>0)?"<br><br>":"")
+            beatResultSB.append((beatResultSB.length() > 0) ? "<br><br>" : "")
                     .append(I18nUtil.getString("jobconf_beat") + "：")
                     .append("<br>address：").append(address)
                     .append("<br>code：").append(beatResult.getCode())
@@ -44,7 +43,7 @@ public class ExecutorRouteFailover extends ExecutorRouter {
                 return beatResult;
             }
         }
-        return new ReturnT<String>(ReturnT.FAIL_CODE, beatResultSB.toString());
+        return new ReturnT<>(ReturnT.FAIL_CODE, beatResultSB.toString());
     }
 
 }

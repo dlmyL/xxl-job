@@ -1,167 +1,48 @@
 package com.xxl.job.admin.core.model;
 
+import lombok.Data;
+
 import java.util.Date;
 
 /**
  * <h1>这是和日志有关的实体类</h1>
- *
- * @author xuxueli  2015-12-19 23:19:09
  */
+@Data
 public class XxlJobLog {
-	// 日志 ID
-	private long id;
-	
-	// 执行器组 ID
-	private int jobGroup;
-	// 定时任务 ID
-	private int jobId;
+    // 日志 ID
+    private long id;
 
-	// 执行器地址
-	private String executorAddress;
-	// 封装定时任务的 JobHandler 名称
-	private String executorHandler;
-	// 执行器参数
-	private String executorParam;
-	// 执行器分片参数
-	private String executorShardingParam;
-	// 失败重试次数
-	private int executorFailRetryCount;
-	
-	// 触发器触发时间
-	private Date triggerTime;
-	// 触发器任务的响应码
-	private int triggerCode;
-	// 触发任务信息
-	private String triggerMsg;
-	
-	// 定时任务执行时间
-	private Date handleTime;
-	// 执行的响应码
-	private int handleCode;
-	// 执行的具体结果
-	private String handleMsg;
+    // 执行器组 ID
+    private int jobGroup;
+    // 定时任务 ID
+    private int jobId;
 
-	// 警报的状态码，0是默认，1是不需要报警，2是报警成功，3是报警失败
-	private int alarmStatus;
+    // 执行器地址
+    private String executorAddress;
+    // 封装定时任务的 JobHandler 名称
+    private String executorHandler;
+    // 执行器参数
+    private String executorParam;
+    // 执行器分片参数
+    private String executorShardingParam;
+    // 失败重试次数
+    private int executorFailRetryCount;
 
-	public long getId() {
-		return id;
-	}
+    // 触发器触发时间
+    private Date triggerTime;
+    // 触发器任务的响应码
+    private int triggerCode;
+    // 触发任务信息
+    private String triggerMsg;
 
-	public void setId(long id) {
-		this.id = id;
-	}
+    // 定时任务执行时间
+    private Date handleTime;
+    // 执行的响应码
+    private int handleCode;
+    // 执行的具体结果
+    private String handleMsg;
 
-	public int getJobGroup() {
-		return jobGroup;
-	}
-
-	public void setJobGroup(int jobGroup) {
-		this.jobGroup = jobGroup;
-	}
-
-	public int getJobId() {
-		return jobId;
-	}
-
-	public void setJobId(int jobId) {
-		this.jobId = jobId;
-	}
-
-	public String getExecutorAddress() {
-		return executorAddress;
-	}
-
-	public void setExecutorAddress(String executorAddress) {
-		this.executorAddress = executorAddress;
-	}
-
-	public String getExecutorHandler() {
-		return executorHandler;
-	}
-
-	public void setExecutorHandler(String executorHandler) {
-		this.executorHandler = executorHandler;
-	}
-
-	public String getExecutorParam() {
-		return executorParam;
-	}
-
-	public void setExecutorParam(String executorParam) {
-		this.executorParam = executorParam;
-	}
-
-	public String getExecutorShardingParam() {
-		return executorShardingParam;
-	}
-
-	public void setExecutorShardingParam(String executorShardingParam) {
-		this.executorShardingParam = executorShardingParam;
-	}
-
-	public int getExecutorFailRetryCount() {
-		return executorFailRetryCount;
-	}
-
-	public void setExecutorFailRetryCount(int executorFailRetryCount) {
-		this.executorFailRetryCount = executorFailRetryCount;
-	}
-
-	public Date getTriggerTime() {
-		return triggerTime;
-	}
-
-	public void setTriggerTime(Date triggerTime) {
-		this.triggerTime = triggerTime;
-	}
-
-	public int getTriggerCode() {
-		return triggerCode;
-	}
-
-	public void setTriggerCode(int triggerCode) {
-		this.triggerCode = triggerCode;
-	}
-
-	public String getTriggerMsg() {
-		return triggerMsg;
-	}
-
-	public void setTriggerMsg(String triggerMsg) {
-		this.triggerMsg = triggerMsg;
-	}
-
-	public Date getHandleTime() {
-		return handleTime;
-	}
-
-	public void setHandleTime(Date handleTime) {
-		this.handleTime = handleTime;
-	}
-
-	public int getHandleCode() {
-		return handleCode;
-	}
-
-	public void setHandleCode(int handleCode) {
-		this.handleCode = handleCode;
-	}
-
-	public String getHandleMsg() {
-		return handleMsg;
-	}
-
-	public void setHandleMsg(String handleMsg) {
-		this.handleMsg = handleMsg;
-	}
-
-	public int getAlarmStatus() {
-		return alarmStatus;
-	}
-
-	public void setAlarmStatus(int alarmStatus) {
-		this.alarmStatus = alarmStatus;
-	}
+    // 警报的状态码，0是默认，1是不需要报警，2是报警成功，3是报警失败
+    private int alarmStatus;
 
 }

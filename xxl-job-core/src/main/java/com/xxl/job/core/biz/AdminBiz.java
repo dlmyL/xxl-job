@@ -7,9 +7,9 @@ import com.xxl.job.core.biz.model.ReturnT;
 import java.util.List;
 
 /**
- * <h1>程序内部使用的接口，该接口是调度中心暴露给执行器那一端的</h1>
- *
- * @author xuxueli 2017-07-27 21:52:49
+ * 调度中心 RESTful API，提供给执行器端进行调用
+ * API服务位置：com.xxl.job.core.biz.AdminBiz
+ *             com.xxl.job.admin.controller.JobApiController
  */
 public interface AdminBiz {
 
@@ -17,22 +17,31 @@ public interface AdminBiz {
     // ---------------------- callback ----------------------
 
     /**
-     * <h2>回调定时任务的执行信息给调度中心的方法</h2>
+     * 任务回调
+     * ------
+     * 说明：    执行器执行完任务后，回调任务结果时使用
+     * 地址格式：{调度中心根地址}/api/callback
      */
-    public ReturnT<String> callback(List<HandleCallbackParam> callbackParamList);
+    ReturnT<String> callback(List<HandleCallbackParam> callbackParamList);
 
 
     // ---------------------- registry ----------------------
 
     /**
-     * <h2>执行器注册自己到调度中心的方法</h2>
+     * 执行器注册
+     * ------
+     * 说明：    执行器注册时使用，调度中心会实时感知注册成功的执行器并发起任务调度
+     * 地址格式：{调度中心根地址}/api/registry
      */
-    public ReturnT<String> registry(RegistryParam registryParam);
+    ReturnT<String> registry(RegistryParam registryParam);
 
     /**
-     * <h2>执行器将自己从调度中心移除的方法</h2>
+     * 执行器注册摘除
+     * ------
+     * 说明：    执行器注册摘除时使用，注册摘除后的执行器不参与任务调度与执行
+     * 地址格式：{调度中心根地址}/api/registryRemove
      */
-    public ReturnT<String> registryRemove(RegistryParam registryParam);
+    ReturnT<String> registryRemove(RegistryParam registryParam);
 
 
     // ---------------------- biz (custome) ----------------------
