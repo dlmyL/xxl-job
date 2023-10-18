@@ -18,7 +18,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <h1>调度中心接收执行器回调信息的工作组件</h1>
+ * <h1>调度中心接收执行器回调信息的工作组件，当接收到执行器端定时任务执行结果回调请求后被激活</h1>
  */
 @Slf4j
 public class JobCompleteHelper {
@@ -31,9 +31,9 @@ public class JobCompleteHelper {
 
     // ---------------------- monitor ----------------------
 
-    // 回调线程池，这个线程池就是处理执行器端回调过来的日志信息的
+    // 回调线程池，负责把执行器发送回来的定时任务执行信息赋值给XxlJobLog对象中的成员变量，然后更新数据库中XxlJobLog的信息
     private ThreadPoolExecutor callbackThreadPool = null;
-    // 监控线程
+    // 监控线程，该线程的作用就是用来判断调度中心调度的哪些定时任务真的是失败了
     private Thread monitorThread;
 
     private volatile boolean toStop = false;
@@ -62,6 +62,11 @@ public class JobCompleteHelper {
                 });
 
 
+        /*
+        monitorThread线程启动之后，就会在一个循环中不断地从数据库中查找定时任务的执行信息，并且，查找的时候，会以当前时间为标志，
+        查找到当前时间的十分钟之前调度的所有定时任务的信息，当然，返回的就是这些定时任务的ID。为什么要这么查找呢？
+        原因其实也不复杂，如果一个定时任务被调度了十分钟了，仍然没有收到执行结果，那这个定时任务的执行肯定就出问题了呀。
+         */
         // 创建监控线程池
         monitorThread = new Thread(new Runnable() {
             @Override
@@ -112,7 +117,7 @@ public class JobCompleteHelper {
                         }
                     } catch (Exception e) {
                         if (!toStop) {
-                            log.error(">>>>>>>>>>> xxl-job, job fail monitor thread error:{}", e);
+                            log.error(">>>>>>>>>>> xxl-job, job fail monitor thread error:{}", e.getMessage(), e);
                         }
                     }
                     try {
@@ -154,7 +159,7 @@ public class JobCompleteHelper {
             @Override
             public void run() {
                 for (HandleCallbackParam handleCallbackParam : callbackParamList) {
-                    // EXEC 
+                    // exec
                     // 在这里处理每一个回调的信息
                     ReturnT<String> callbackResult = callback(handleCallbackParam);
                     log.debug(">>>>>>>>> JobApiController.callback {}, handleCallbackParam={}, callbackResult={}", (callbackResult.getCode() == ReturnT.SUCCESS_CODE ? "success" : "fail"), handleCallbackParam, callbackResult);
@@ -190,6 +195,7 @@ public class JobCompleteHelper {
             handleMsg.append(handleCallbackParam.getHandleMsg());
         }
         log.setHandleTime(new Date());
+        // 在这里把定时任务执行的状态码赋值给XxlJobLog对象中的handleCode成员变量了
         log.setHandleCode(handleCallbackParam.getHandleCode());
         log.setHandleMsg(handleMsg.toString());
         // 更新数据库中的日志信息

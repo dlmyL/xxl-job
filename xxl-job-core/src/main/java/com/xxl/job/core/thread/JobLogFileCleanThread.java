@@ -42,6 +42,11 @@ public class JobLogFileCleanThread {
             return;
         }
 
+        /*
+        得到创建的所有日志文件夹，日志文件夹的名称就是该文件夹创建的时间。
+        如果当前时间减去文件夹创建的时间大于用户设定的过期时间了，说明该文件夹中存储的日志已经过期了，
+        可以被删除了，然后删除即可。
+         */
         localThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -92,14 +97,11 @@ public class JobLogFileCleanThread {
 
                             }
                         }
-
                     } catch (Exception e) {
                         if (!toStop) {
                             log.error(e.getMessage(), e);
                         }
-
                     }
-
                     try {
                         TimeUnit.DAYS.sleep(1);
                     } catch (InterruptedException e) {
@@ -109,7 +111,6 @@ public class JobLogFileCleanThread {
                     }
                 }
                 log.info(">>>>>>>>>>> xxl-job, executor JobLogFileCleanThread thread destroy.");
-
             }
         });
         localThread.setDaemon(true);
@@ -119,11 +120,9 @@ public class JobLogFileCleanThread {
 
     public void toStop() {
         toStop = true;
-
         if (localThread == null) {
             return;
         }
-
         // interrupt and wait
         localThread.interrupt();
         try {

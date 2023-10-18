@@ -157,6 +157,9 @@ public class JobLogController {
         }
     }
 
+    /**
+     * 终止执行器端工作线程的方法
+     */
     @RequestMapping("/logKill")
     @ResponseBody
     public ReturnT<String> logKill(int id) {
@@ -174,6 +177,7 @@ public class JobLogController {
         ReturnT<String> runResult = null;
         try {
             ExecutorBiz executorBiz = XxlJobScheduler.getExecutorBiz(jobLog.getExecutorAddress());
+            // exec => {执行器内嵌服务根地址}/kill
             runResult = executorBiz.kill(new KillParam(jobInfo.getId()));
         } catch (Exception e) {
             log.error(e.getMessage(), e);

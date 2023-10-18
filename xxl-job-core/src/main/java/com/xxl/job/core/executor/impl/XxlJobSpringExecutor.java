@@ -19,7 +19,8 @@ import java.util.Map;
 /**
  * <h1>
  * 这个类就是执行器服务开始执行的入口，该类的 afterSingletonsInstantiated 方法会在 IOC 容器中
- * 的所有单例 BEAN 初始化后被回调，该类的对象会在用户自己创建的 XxlJobConfig 配置类中，被当做一个 Bean 对象被注入到IOC容器中
+ * 的所有单例 BEAN 初始化后被回调，该类的对象会在用户自己创建的 XxlJobConfig 配置类中，被当做一
+ * 个 Bean 对象被注入到IOC容器中
  * </h1>
  */
 @Slf4j
@@ -115,7 +116,6 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
                 // 在这里将该方法注册到 JobHandler 的子类对象中，这个时候逻辑就会跑到父类了
                 registJobHandler(xxlJob, bean, executeMethod);
             }
-
         }
     }
 

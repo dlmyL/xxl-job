@@ -50,11 +50,7 @@ public class EmailJobAlarm implements JobAlarm {
             // 设置报警信息的标题
             String title = I18nUtil.getString("jobconf_monitor");
             // 向模板中填充具体内容
-            String content = MessageFormat.format(loadEmailJobAlarmTemplate(),
-                    group != null ? group.getTitle() : "null",
-                    info.getId(),
-                    info.getJobDesc(),
-                    alarmContent);
+            String content = MessageFormat.format(loadEmailJobAlarmTemplate(), group != null ? group.getTitle() : "null", info.getId(), info.getJobDesc(), alarmContent);
             // 也许设置了多个邮件地址，所以这里转化为集合
             Set<String> emailSet = new HashSet<>(Arrays.asList(info.getAlarmEmail().split(",")));
             // 遍历地址，然后就是给每一个地址发送报警邮件
@@ -73,7 +69,6 @@ public class EmailJobAlarm implements JobAlarm {
                     log.error(">>>>>>>>>>> xxl-job, job fail alarm email send error, JobLogId:{}", jobLog.getId(), e);
                     alarmResult = false;
                 }
-
             }
         }
         // 返回发送结果

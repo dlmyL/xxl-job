@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * <h1>该类就是用来真正执行定时任务的，并且是一个定时任务对应着一个 JobThread 对象</h1>
+ * <h1>该类就是用来真正执行定时任务的，并且是一个定时任务对应着一个JobThread对象</h1>
  * <p>
  * 其实说一个并不太准确，比如，有一个定时任务每2s执行一次，那么在执行器这一端，定时任务对应的JobThread对象一但创建了
  * 就会只执行这个定时任务，但是有可能这个任务比较耗时，3秒还没执行完，那么之后每2秒要执行的这个定时任务可能就会放在JobThread对象中的
@@ -158,8 +158,7 @@ public class JobThread extends Thread {
                     // 接下来就是一系列的处理执行器端定时任务执行的日志操作
 
                     // 先根据定时任务的触发时间和定时任务的日志 ID，创建一个记录定时任务日的文件名
-                    String logFileName = XxlJobFileAppender.makeLogFileName(new Date(triggerParam.getLogDateTime()),
-							triggerParam.getLogId());
+                    String logFileName = XxlJobFileAppender.makeLogFileName(new Date(triggerParam.getLogDateTime()), triggerParam.getLogId());
                     // 然后创建一个定时任务上下文对象
                     XxlJobContext xxlJobContext = new XxlJobContext(
                             triggerParam.getJobId(),
@@ -174,16 +173,27 @@ public class JobThread extends Thread {
                     // //这里会向 logFileName 文件中记录一下日志，记录的就是下面的这句话，定时任务开始执行了
                     XxlJobHelper.log("<br>----------- xxl-job job execute start -----------<br>----------- Param:" + xxlJobContext.getJobParam());
 
-                    // 如果设置了超时时间，就要设置一个新的线程来执行定时任务
+                    // === 设置了超时时间 ===
+                    /*
+                    如果设置了超时时间，就要设置一个新的线程来执行定时任务
+                    这个超时时间是用户在web界面设定的，会被保存到XxlJobInfo对象中，并且存储到数据库中。
+                    定时任务调度的时候，这个超时时间会被封装到TriggerParam对象中发送给执行器这一端。
+                    而执行器这一端得到定时任务的超时时间后，就会采取相应的措施
+                     */
                     if (triggerParam.getExecutorTimeout() > 0) {
                         Thread futureThread = null;
                         try {
-                            FutureTask<Boolean> futureTask = new FutureTask<Boolean>(new Callable<Boolean>() {
+                            /*
+                            通过创建一个FutureTask来执行定时任务，然后让一个新的线程来执行这个FutureTask。
+                            在超时时间之内没有获得执行结果，就意味着定时任务超时了。这时候程序就会走到catch块中，
+                            将定时任务的执行结果设置为失败。这就是定时任务超时的简单逻辑。
+                             */
+                            FutureTask<Boolean> futureTask = new FutureTask<>(new Callable<Boolean>() {
                                 @Override
                                 public Boolean call() throws Exception {
                                     // 子线程可以访问父线程的本地变量
                                     XxlJobContext.setXxlJobContext(xxlJobContext);
-                                    //在 FutureTask 中执行定时任务
+                                    // 在 FutureTask 中执行定时任务
                                     handler.execute();
                                     return true;
                                 }
@@ -201,8 +211,10 @@ public class JobThread extends Thread {
                         } finally {
                             futureThread.interrupt();
                         }
-                    } else {
-                        // KEYPOINT 执行定时任务
+                    }
+                    // === 没有设置超时时间 ===
+                    else {
+                        // exec => 执行定时任务
                         // 没有设置超时时间，通过反射执行了定时任务，终于在这里执行了
                         handler.execute();
                     }
@@ -263,6 +275,8 @@ public class JobThread extends Thread {
                 // 在这里记录异常信息到日志文件中
                 XxlJobHelper.log("<br>----------- JobThread Exception:" + errorMsg + "<br>----------- xxl-job job execute end(error) -----------");
             } finally {
+                // ====== 在JobThread的run方法的finally块中，执行器这一端回调线程的组件终于被调用了 ======
+
                 // 这里就走到了 finally 中，也就要开始执行日志回调给调度中心的操作了
                 // 别忘了，调度中心在远程调用之前创建了 XxlJobLog 这个对象，这个对象要记录很多日记调用信息的
                 if (triggerParam != null) {
@@ -270,19 +284,23 @@ public class JobThread extends Thread {
                     if (!toStop) {
                         // 如果没有停止，就创建封装回调信息的HandleCallbackParam对象
                         // 把这个对象提交给 TriggerCallbackThread 内部的 callBackQueue 队列中
-                        TriggerCallbackThread.pushCallBack(new HandleCallbackParam(
-                                triggerParam.getLogId(),
-                                triggerParam.getLogDateTime(),
-                                XxlJobContext.getXxlJobContext().getHandleCode(),
-                                XxlJobContext.getXxlJobContext().getHandleMsg())
+                        TriggerCallbackThread.pushCallBack(
+                                new HandleCallbackParam(
+                                        triggerParam.getLogId(),
+                                        triggerParam.getLogDateTime(),
+                                        XxlJobContext.getXxlJobContext().getHandleCode(),
+                                        XxlJobContext.getXxlJobContext().getHandleMsg()
+                                )
                         );
                     } else {
                         // 如果走到这里说明线程被终止了，就要封装处理失败的回信
-                        TriggerCallbackThread.pushCallBack(new HandleCallbackParam(
-                                triggerParam.getLogId(),
-                                triggerParam.getLogDateTime(),
-                                XxlJobContext.HANDLE_CODE_FAIL,
-                                stopReason + " [job running, killed]")
+                        TriggerCallbackThread.pushCallBack(
+                                new HandleCallbackParam(
+                                        triggerParam.getLogId(),
+                                        triggerParam.getLogDateTime(),
+                                        XxlJobContext.HANDLE_CODE_FAIL,
+                                        stopReason + " [job running, killed]"
+                                )
                         );
                     }
                 }

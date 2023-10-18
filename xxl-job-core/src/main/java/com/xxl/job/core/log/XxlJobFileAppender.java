@@ -15,6 +15,10 @@ import java.util.Date;
 
 /**
  * <h1>该类是操作日志的类，对日志文件进行操作的功能全部封装在这里</h1>
+ * <p>
+ * 执行器这一端不仅要把定时任务执行结果回调给调度中心，还要把定时任务执行
+ * 的详细信息以日志的方式收集起来，并且输出到本地文件中
+ * </p>
  */
 @Slf4j
 public class XxlJobFileAppender {
@@ -22,7 +26,6 @@ public class XxlJobFileAppender {
 	/**
 	 * 默认的日志存储路径，但是在执行器启动的时候，该路径会被用户在
 	 * 配置文件中设置的路径取代
-	 *
 	 * strut like:
 	 * 	---/
 	 * 	---/gluesource/
@@ -31,7 +34,6 @@ public class XxlJobFileAppender {
 	 * 	---/2017-12-25/
 	 * 	---/2017-12-25/639.log
 	 * 	---/2017-12-25/821.log
-	 *
 	 */
 	private static String logBasePath = "/data/applogs/xxl-job/jobhandler";
 	/**
@@ -69,13 +71,10 @@ public class XxlJobFileAppender {
 	}
 
 	/**
-	 * <h2>
-	 *     根据定时任务的触发时间和其对应的日志id创造一个文件名，这个日志id是在调度中心就创建好的
-	 * 	   通过触发器参数传递给执行器的
-	 * </h2>
+	 * 根据定时任务的触发时间和其对应的日志id创造一个文件名，这个日志id是在调度中心就创建好的
+	 * 通过触发器参数传递给执行器的
 	 */
 	public static String makeLogFileName(Date triggerDate, long logId) {
-
 		// filePath/yyyy-MM-dd
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");	// avoid concurrent problem, can not be static
 		File logFilePath = new File(getLogPath(), sdf.format(triggerDate));
@@ -95,7 +94,6 @@ public class XxlJobFileAppender {
 	 * <h2>把日志记录到本地的日志文件中</h2>
 	 */
 	public static void appendLog(String logFileName, String appendLog) {
-
 		// log file
 		if (logFileName==null || logFileName.trim().length()==0) {
 			return;
@@ -141,7 +139,6 @@ public class XxlJobFileAppender {
 	 * <h2>读取本地的日志文件内容</h2>
 	 */
 	public static LogResult readLog(String logFileName, int fromLineNum){
-
 		// valid log file
 		if (logFileName==null || logFileName.trim().length()==0) {
             return new LogResult(fromLineNum, 0, "readLog fail, logFile not found", true);

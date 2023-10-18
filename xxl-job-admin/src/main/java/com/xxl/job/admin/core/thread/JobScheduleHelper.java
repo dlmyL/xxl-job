@@ -369,7 +369,7 @@ public class JobScheduleHelper {
                         }
                     } catch (Exception e) {
                         if (!ringThreadToStop) {
-                            log.error(">>>>>>>>>>> xxl-job, JobScheduleHelper#ringThread error:{}", e);
+                            log.error(">>>>>>>>>>> xxl-job, JobScheduleHelper#ringThread error:{}", e.getMessage(), e);
                         }
                     }
                 }

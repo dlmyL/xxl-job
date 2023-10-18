@@ -49,48 +49,51 @@ public class ExecutorRegistryThread {
         registryThread = new Thread(new Runnable() {
             @Override
             public void run() {
+                // 在一个循环中执行注册任务
                 while (!toStop) {
                     try {
                         //根据 appName 和 address 创建注册参数，注意，这里的 address 是执行器的地址，只有一个，别和调度中心的地址搞混了
-                        RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(),
-                                appname, address);
+                        RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(), appname, address);
                         // 这里考虑到调度中心也许是以集群的形式存在，所以从集合中得到每一个和调度中心通话地客户端，然后发送注册消息即可
                         for (AdminBiz adminBiz : XxlJobExecutor.getAdminBizList()) {
                             try {
+                                // EXEC => {调度中心根地址}/api/registry
                                 // 在这里执行注册
                                 ReturnT<String> registryResult = adminBiz.registry(registryParam);
                                 if (registryResult != null && ReturnT.SUCCESS_CODE == registryResult.getCode()) {
                                     registryResult = ReturnT.SUCCESS;
-                                    log.debug(">>>>>>>>>>> xxl-job registry success, registryParam:{}, " +
-                                            "registryResult:{}", new Object[]{registryParam, registryResult});
+                                    log.debug(">>>>>>>>>>> xxl-job registry success, registryParam:{}, " + "registryResult:{}", new Object[]{registryParam, registryResult});
                                     // 注册成功则打破循环，因为注册成功一个后，调度中心就把相应的数据写到数据库中了，
                                     // 没必要每个都注册，直接退出循环即可，注册不成功，再找下一个注册中心继续注册
                                     break;
                                 } else {
-                                    log.info(">>>>>>>>>>> xxl-job registry fail, registryParam:{}, registryResult:{}"
-                                            , new Object[]{registryParam, registryResult});
+                                    // 如果注册失败了，就寻找下一个调度中心继续注册
+                                    log.info(">>>>>>>>>>> xxl-job registry fail, registryParam:{}, registryResult:{}", new Object[]{registryParam, registryResult});
                                 }
                             } catch (Exception e) {
                                 log.info(">>>>>>>>>>> xxl-job registry error, registryParam:{}", registryParam, e);
                             }
-
                         }
                     } catch (Exception e) {
                         if (!toStop) {
                             log.error(e.getMessage(), e);
                         }
-
                     }
 
                     try {
                         if (!toStop) {
-                            // 这里是每间隔 30s，就再循环重新注册一次，也就是维持心跳信息
+                            /*
+                             执行器注册到调度中心的心跳时间，其实就是 30s 重新注册一次，刷新注册时间，
+                             以防止调度中心主观任务执行器下线了
+                             RegistryConfig.BEAT_TIMEOUT=30
+
+                             这里是每间隔 30s，就再循环重新注册一次，也就是【维持心跳信息】
+                            */
                             TimeUnit.SECONDS.sleep(RegistryConfig.BEAT_TIMEOUT);
                         }
                     } catch (InterruptedException e) {
                         if (!toStop) {
-                            log.warn(">>>>>>>>>>> xxl-job, executor registry thread interrupted, error msg:{}",
-                                    e.getMessage());
+                            log.warn(">>>>>>>>>>> xxl-job, executor registry thread interrupted, error msg:{}", e.getMessage());
                         }
                     }
                 }
@@ -98,34 +101,29 @@ public class ExecutorRegistryThread {
                 // registry remove
                 try {
                     /*
-                        这里要注意，当程序执行到这里的时候，就意味着跳出了上面那个工作线程的循环，其实也就意味着那个工作线程要结束工作了，不再注册执行器，
-                        也不再刷新心跳信息，这也就意味着执行器这一端可能不再继续提供服务了，所以下面要把注册的执行器信息从调度中心删除，所以发送删除的信息
-                        给调度中心
+                    这里要注意，当程序执行到这里的时候，就意味着跳出了上面那个工作线程的循环，其实也就意味着那个工作线程要结束工作了，不再注册执行器，
+                    也不再刷新心跳信息，这也就意味着执行器这一端可能不再继续提供服务了，所以下面要把注册的执行器信息从调度中心删除，所以发送删除的信息
+                    给调度中心
                      */
                     // 再次创建注册参数对象
-                    RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(),
-                            appname, address);
+                    RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(), appname, address);
                     for (AdminBiz adminBiz : XxlJobExecutor.getAdminBizList()) {
                         try {
+                            // EXEC => {调度中心根地址}/api/registryRemove
                             // 在这里发送删除执行器的信息
                             ReturnT<String> registryResult = adminBiz.registryRemove(registryParam);
                             if (registryResult != null && ReturnT.SUCCESS_CODE == registryResult.getCode()) {
                                 registryResult = ReturnT.SUCCESS;
-                                log.info(">>>>>>>>>>> xxl-job registry-remove success, registryParam:{}, " +
-                                        "registryResult:{}", new Object[]{registryParam, registryResult});
+                                log.info(">>>>>>>>>>> xxl-job registry-remove success, registryParam:{}, " + "registryResult:{}", new Object[]{registryParam, registryResult});
                                 break;
                             } else {
-                                log.info(">>>>>>>>>>> xxl-job registry-remove fail, registryParam:{}, " +
-                                        "registryResult:{}", new Object[]{registryParam, registryResult});
+                                log.info(">>>>>>>>>>> xxl-job registry-remove fail, registryParam:{}, " + "registryResult:{}", new Object[]{registryParam, registryResult});
                             }
                         } catch (Exception e) {
                             if (!toStop) {
-                                log.info(">>>>>>>>>>> xxl-job registry-remove error, registryParam:{}", registryParam
-                                        , e);
+                                log.info(">>>>>>>>>>> xxl-job registry-remove error, registryParam:{}", registryParam, e);
                             }
-
                         }
-
                     }
                 } catch (Exception e) {
                     if (!toStop) {
@@ -133,7 +131,6 @@ public class ExecutorRegistryThread {
                     }
                 }
                 log.info(">>>>>>>>>>> xxl-job, executor registry thread destroy.");
-
             }
         });
         // 在这里创建线程

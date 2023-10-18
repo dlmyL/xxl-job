@@ -53,20 +53,20 @@ public class JobApiController {
         // 判断是否为执行器端回调并上报执行结果
         if ("callback".equals(uri)) {
             List<HandleCallbackParam> callbackParamList = GsonTool.fromJson(data, List.class, HandleCallbackParam.class);
-            // EXEC AdminBizImpl#callback
+            // exec => AdminBizImpl#callback
             return adminBiz.callback(callbackParamList);
         }
         // 判断是否为注册操作
         else if ("registry".equals(uri)) {
             RegistryParam registryParam = GsonTool.fromJson(data, RegistryParam.class);
-            // EXEC AdminBizImpl#registry
+            // exec => AdminBizImpl#registry
             // 执行注册任务
             return adminBiz.registry(registryParam);
         }
         // 判断是否为移除执行器操作
         else if ("registryRemove".equals(uri)) {
             RegistryParam registryParam = GsonTool.fromJson(data, RegistryParam.class);
-            // EXEC AdminBizImpl#registryRemove
+            // exec => AdminBizImpl#registryRemove
             // 执行移除任务
             return adminBiz.registryRemove(registryParam);
         } else {

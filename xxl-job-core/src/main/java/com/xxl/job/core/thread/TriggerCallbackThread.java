@@ -74,7 +74,7 @@ public class TriggerCallbackThread {
                         // 从回调任务队列中取出一个回调的信息对象
                         HandleCallbackParam callback = getInstance().callBackQueue.take();
                         if (callback != null) {
-                            List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
+                            List<HandleCallbackParam> callbackParamList = new ArrayList<>();
                             /*
                             这里的意思就是说，如果回调的任务队列中有待回调的数据，就把所有数据转移到一个集合中，
                             并且返回有多少条要回调的数据
@@ -102,7 +102,7 @@ public class TriggerCallbackThread {
 
                 // 走到这里，就意味着退出了循环，其实也就意味着 triggerCallbackThread 线程要停止工作了
                 try {
-                    List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
+                    List<HandleCallbackParam> callbackParamList = new ArrayList<>();
                     // 这里会再次把回调队列中的所有数据都放到新的集合中
                     int drainToNum = getInstance().callBackQueue.drainTo(callbackParamList);
                     if (callbackParamList != null && callbackParamList.size() > 0) {
@@ -123,6 +123,8 @@ public class TriggerCallbackThread {
         triggerCallbackThread.start();
 
 
+        // 该线程的功能就是在triggerCallbackThread线程回调定时任务执行结果失败后，重新回调一次，
+        // 重新回调的这一次，就交给triggerRetryCallbackThread线程来执行
         // 启动重试回调的线程
         triggerRetryCallbackThread = new Thread(new Runnable() {
             @Override
@@ -151,7 +153,6 @@ public class TriggerCallbackThread {
         });
         triggerRetryCallbackThread.setDaemon(true);
         triggerRetryCallbackThread.start();
-
     }
 
     /**
@@ -186,7 +187,8 @@ public class TriggerCallbackThread {
         // 获得访问调度中心的客户端集合，并且遍历它们
         for (AdminBiz adminBiz : XxlJobExecutor.getAdminBizList()) {
             try {
-                // 在这里进行回调
+                // exec => {调度中心根地址}/api/callback
+                // 在这里进行回调，通过http协议发送给调度中心
                 ReturnT<String> callbackResult = adminBiz.callback(callbackParamList);
                 if (callbackResult != null && ReturnT.SUCCESS_CODE == callbackResult.getCode()) {
                     // 回调成功了，就记录一下日志
@@ -196,13 +198,11 @@ public class TriggerCallbackThread {
                     break;
                 } else {
                     // 回调失败了，记录一下日志
-                    callbackLog(callbackParamList,
-                            "<br>----------- xxl-job job callback fail, callbackResult:" + callbackResult);
+                    callbackLog(callbackParamList, "<br>----------- xxl-job job callback fail, callbackResult:" + callbackResult);
                 }
             } catch (Exception e) {
                 // 回调异常了，记录一下日志
-                callbackLog(callbackParamList,
-                        "<br>----------- xxl-job job callback error, errorMsg:" + e.getMessage());
+                callbackLog(callbackParamList, "<br>----------- xxl-job job callback error, errorMsg:" + e.getMessage());
             }
         }
         if (!callbackRet) {

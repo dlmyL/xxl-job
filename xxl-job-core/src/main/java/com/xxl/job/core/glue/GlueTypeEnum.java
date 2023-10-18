@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * <h1>运行模式枚举类</h1>
+ * <h1>任务模式</h1>
  */
 @Getter
 @AllArgsConstructor

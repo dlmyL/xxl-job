@@ -29,6 +29,11 @@ public class JobFailMonitorHelper {
 	// 线程是否停止工作
     private volatile boolean toStop = false;
 
+    /*
+    用来实现告警功能和失败重试功能的
+    先从数据库查询出所有执行失败的定时任务，然后再遍历这些定时任务，根据每一个定时任务的重试次数进行重试，
+    也就是重新调度。当然，也会把给用户发送邮件，通知用户哪些定时任务执行失败了
+     */
     public void start() {
         monitorThread = new Thread(new Runnable() {
             @Override
@@ -48,8 +53,7 @@ public class JobFailMonitorHelper {
 							LIMIT 1000
 						 【注意】这里查询出来的都是执行失败并且报警状态码还未改变的定时任务
 						 */
-                        List<Long> failLogIds = XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao()
-								.findFailJobLogIds(1000);
+                        List<Long> failLogIds = XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().findFailJobLogIds(1000);
 						// 如果结果不为空，说明存在执行失败的定时任务，并且报警状态码还未改变
                         if (failLogIds != null && !failLogIds.isEmpty()) {
 							// 遍历该集合
@@ -61,8 +65,7 @@ public class JobFailMonitorHelper {
 									在这里把XxlJobLog的alarmStatus修改为-1，-1就是锁定状态，这里大家其实就可以把这个-1看成CAS的条件
 									告警状态：0-默认、-1=锁定状态、1-无需告警、2-告警成功、3-告警失败
 								 */
-                                int lockRet = XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao()
-										.updateAlarmStatus(failLogId, 0, -1);
+                                int lockRet = XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().updateAlarmStatus(failLogId, 0, -1);
                                 if (lockRet < 1) {
 									// 走到这里说明更新数据库失败了，直接跳出本次循环，继续下一次循环
                                     continue;
@@ -77,9 +80,8 @@ public class JobFailMonitorHelper {
                                     // EXEC JobTriggerPoolHelper#trigger
 									// 如果大于0就立刻远程调度一次
 									// 【注意】log.getExecutorFailRetryCount()-1这行代码，就会在每次重试的时候把重试次数减1，直到为0
-                                    JobTriggerPoolHelper.trigger(log.getJobId(), TriggerTypeEnum.RETRY,
-											(log.getExecutorFailRetryCount() - 1), log.getExecutorShardingParam(),
-											log.getExecutorParam(), null);
+                                    JobTriggerPoolHelper.trigger(log.getJobId(), TriggerTypeEnum.RETRY, (log.getExecutorFailRetryCount() - 1),
+                                            log.getExecutorShardingParam(), log.getExecutorParam(), null);
 									// 记录下来失败重试调用了一次
                                     String retryMsg = "<br><br><span style=\"color:#F39C12;\" > >>>>>>>>>>>" + I18nUtil.getString("jobconf_trigger_type_retry") + "<<<<<<<<<<< </span><br>";
                                     log.setTriggerMsg(log.getTriggerMsg() + retryMsg);
@@ -105,7 +107,7 @@ public class JobFailMonitorHelper {
                         }
                     } catch (Exception e) {
                         if (!toStop) {
-                            log.error(">>>>>>>>>>> xxl-job, job fail monitor thread error:{}", e);
+                            log.error(">>>>>>>>>>> xxl-job, job fail monitor thread error:{}", e.getMessage(), e);
                         }
                     }
                     try {

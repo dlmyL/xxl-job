@@ -52,7 +52,6 @@ public class XxlJobHelper {
         if (xxlJobContext == null) {
             return null;
         }
-
         return xxlJobContext.getJobLogFileName();
     }
 
@@ -94,7 +93,7 @@ public class XxlJobHelper {
      * <h2>存储定时任务日志的入口方法</h2>
      */
     public static boolean log(String appendLogPattern, Object ... appendLogArguments) {
-        // 格式化要记录的日志信息
+        // 该方法的作用是用来格式化要记录的日志信息
         FormattingTuple ft = MessageFormatter.arrayFormat(appendLogPattern, appendLogArguments);
         String appendLog = ft.getMessage();
         // 从栈帧中获得方法的调用信息

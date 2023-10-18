@@ -2,14 +2,23 @@ package com.xxl.job.core.server;
 
 import com.xxl.job.core.biz.ExecutorBiz;
 import com.xxl.job.core.biz.impl.ExecutorBizImpl;
-import com.xxl.job.core.biz.model.*;
+import com.xxl.job.core.biz.model.IdleBeatParam;
+import com.xxl.job.core.biz.model.KillParam;
+import com.xxl.job.core.biz.model.LogParam;
+import com.xxl.job.core.biz.model.ReturnT;
+import com.xxl.job.core.biz.model.TriggerParam;
 import com.xxl.job.core.thread.ExecutorRegistryThread;
 import com.xxl.job.core.util.GsonTool;
 import com.xxl.job.core.util.ThrowableUtil;
 import com.xxl.job.core.util.XxlJobRemotingUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -18,10 +27,12 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <1>执行器这一段内嵌的 Netty 服务器</1>
@@ -48,9 +59,6 @@ public class EmbedServer {
         thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                // param
-                EventLoopGroup bossGroup = new NioEventLoopGroup();
-                EventLoopGroup workerGroup = new NioEventLoopGroup();
                 // bizThreadPool 线程池会传入到下面的 EmbedHttpServerHandler 入站处理器中
                 ThreadPoolExecutor bizThreadPool = new ThreadPoolExecutor(
                         0,
@@ -70,6 +78,11 @@ public class EmbedServer {
                                 throw new RuntimeException("xxl-job, EmbedServer bizThreadPool is EXHAUSTED!");
                             }
                         });
+
+                // 主从Reactor多线程模式
+                EventLoopGroup bossGroup = new NioEventLoopGroup();
+                EventLoopGroup workerGroup = new NioEventLoopGroup();
+
                 try {
                     // start server
                     ServerBootstrap bootstrap = new ServerBootstrap();
@@ -81,7 +94,7 @@ public class EmbedServer {
                                     channel.pipeline()
                                             // 心跳检测
                                             .addLast(new IdleStateHandler(0, 0, 30 * 3, TimeUnit.SECONDS))  // beat 3N, close if idle
-                                            // HTTP 编解码器，该处理器既是入站处理器，也是出站处理器
+                                            // HTTP 编解码器，duplex 混合型事件处理器，既能处理入站事件又能处理出站事件
                                             .addLast(new HttpServerCodec())
                                             // 聚合消息，当传递的 HTTP 消息过大时会被拆开，这里添加这个处理器就是把拆分的消息再次聚合起来，形成一个整体再向后传递
                                             // 该处理器是入站处理器
@@ -94,6 +107,7 @@ public class EmbedServer {
                     // 绑定端口号
                     ChannelFuture future = bootstrap.bind(port).sync();
                     log.info(">>>>>>>>>>> xxl-job remoting server start success, nettype = {}, port = {}", EmbedServer.class, port);
+                    // EXEC
                     // 注册执行器到调度中心
                     startRegistry(appname, address);
                     // 等待关闭
@@ -138,8 +152,6 @@ public class EmbedServer {
      * <h2>程序内部定义的入站处理器，这个处理器会进行定时任务方法的调用</h2>
      */
     public static class EmbedHttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-        private static final Logger logger = LoggerFactory.getLogger(EmbedHttpServerHandler.class);
-
         /**
          * 很重要的对象，其实就是 ExecutorBizImpl，该对象调用定时方法
          */
@@ -204,9 +216,7 @@ public class EmbedServer {
                 return new ReturnT<String>(ReturnT.FAIL_CODE, "invalid request, uri-mapping empty.");
             }
             // 判断执行器令牌是否和调度中心令牌一样，这里也能发现，调度中心和执行器的 TOKEN 令牌一定要是相等的，因为判断是双向的，两边都要判断
-            if (accessToken != null
-                    && accessToken.trim().length() > 0
-                    && !accessToken.equals(accessTokenReq)) {
+            if (accessToken != null && accessToken.trim().length() > 0 && !accessToken.equals(accessTokenReq)) {
                 return new ReturnT<String>(ReturnT.FAIL_CODE, "The access token is wrong.");
             }
 
@@ -291,7 +301,6 @@ public class EmbedServer {
      * <h2>启动注册线程，然后把定时器注册到调度中心</h2>
      */
     public void startRegistry(final String appname, final String address) {
-        // start registry
         ExecutorRegistryThread.getInstance().start(appname, address);
     }
 
@@ -299,7 +308,6 @@ public class EmbedServer {
      * <h2>销毁注册线程</h2>
      */
     public void stopRegistry() {
-        // stop registry
         ExecutorRegistryThread.getInstance().toStop();
     }
 

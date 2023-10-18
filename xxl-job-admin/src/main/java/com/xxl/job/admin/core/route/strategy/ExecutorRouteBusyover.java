@@ -26,7 +26,7 @@ public class ExecutorRouteBusyover extends ExecutorRouter {
                 ExecutorBiz executorBiz = XxlJobScheduler.getExecutorBiz(address);
                 // 向客户端发送忙碌检测请求，判断该执行器的定时任务线程是否正在执行对应的定时任务
                 // 如果正在执行，说明比较忙碌，就不使用该地址了
-                // EXEC ExecutorBizClient#idleBeat  {执行器内嵌服务根地址}/idleBeat
+                // EXEC => ExecutorBizClient#idleBeat  {执行器内嵌服务根地址}/idleBeat
                 idleBeatResult = executorBiz.idleBeat(new IdleBeatParam(triggerParam.getJobId()));
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);

@@ -21,6 +21,7 @@ public class AdminBizImpl implements AdminBiz {
      */
     @Override
     public ReturnT<String> callback(List<HandleCallbackParam> callbackParamList) {
+        // 接收到执行器端定时任务执行的结果回调请求，调度中心的JobCompleteHelper组件就启动了
         return JobCompleteHelper.getInstance().callback(callbackParamList);
     }
 
@@ -29,6 +30,7 @@ public class AdminBizImpl implements AdminBiz {
      */
     @Override
     public ReturnT<String> registry(RegistryParam registryParam) {
+        // 接收到执行器端的注册请求，调度中心的JobCompleteHelper组件就启动了
         return JobRegistryHelper.getInstance().registry(registryParam);
     }
 

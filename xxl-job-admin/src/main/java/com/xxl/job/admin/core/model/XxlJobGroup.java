@@ -9,6 +9,9 @@ import java.util.List;
 
 /**
  * <h1>
+ * xxl-job的执行器是要把自身部署的服务器的信息发送给调度中心的，调度中心会把这些信息记录到数据库，
+ * 当然也会把这些执行器的信息收集起来，把appName相同的执行器，封装到同一个Group中。
+ *
  * 执行器组的实体类，实际上就是把执行相同定时任务的执行器用这个对象来封装，因为执行相同
  * 定时任务的执行器出了服务实例地址不同，其他的都相同，所以可以放到一起，服务实例地址用逗号
  * 隔开即可，该实体类对应的就是数据库中的 【xxl-job-group】这张表
@@ -16,6 +19,13 @@ import java.util.List;
  */
 @Data
 public class XxlJobGroup {
+
+    /*
+    只要是appName相同的执行器的服务器信息，都会被封装到同一个XxlJobGroup对象中，并且该对象中的registryList成员变量，
+    存放的就是这些执行器部署的服务器的IP地址。
+    这样一来，当调度中心将要调度一个定时任务的时候，就可以根据定时任务信息中的jobGroup这个id，
+    查询出定时任务究竟属于哪一个XxlJobGroup。
+     */
 
     private int id;
     private String appname;         // 执行器中配置的项目名称

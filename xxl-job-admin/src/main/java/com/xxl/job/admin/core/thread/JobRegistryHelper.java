@@ -58,8 +58,7 @@ public class JobRegistryHelper {
                 new ThreadFactory() {
                     @Override
                     public Thread newThread(Runnable r) {
-                        return new Thread(r,
-                                "xxl-job, admin JobRegistryMonitorHelper-registryOrRemoveThreadPool-" + r.hashCode());
+                        return new Thread(r, "xxl-job, admin JobRegistryMonitorHelper-registryOrRemoveThreadPool-" + r.hashCode());
                     }
                 },
                 // 下面这个是xxl-job定义的线程池拒绝策略
@@ -68,8 +67,7 @@ public class JobRegistryHelper {
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
                         // 其实就是把被拒绝的任务再执行一遍
                         r.run();
-                        log.warn(">>>>>>>>>>> xxl-job, registry or remove too fast, match threadpool rejected " +
-                                "handler(run now).");
+                        log.warn(">>>>>>>>>>> xxl-job, registry or remove too fast, match threadpool rejected handler(run now).");
                     }
                 });
 
@@ -163,7 +161,7 @@ public class JobRegistryHelper {
                         }
                     } catch (Exception e) {
                         if (!toStop) {
-                            log.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e);
+                            log.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e.getMessage(), e);
                         }
                     }
                     try {
@@ -171,7 +169,7 @@ public class JobRegistryHelper {
                         TimeUnit.SECONDS.sleep(RegistryConfig.BEAT_TIMEOUT);
                     } catch (InterruptedException e) {
                         if (!toStop) {
-                            log.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e);
+                            log.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e.getMessage(), e);
                         }
                     }
                 }

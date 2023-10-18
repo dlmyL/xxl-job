@@ -3,8 +3,6 @@ package com.xxl.job.admin.core.thread;
 import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
 import com.xxl.job.admin.core.model.XxlJobLogReport;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -32,6 +30,8 @@ public class JobLogReportHelper {
     // 线程是否停止运行
     private volatile boolean toStop = false;
 
+    // 这个组件的逻辑非常简单，可以分为两个功能模块，一个就是统计调度中心所有被调度的定时任务的执行情况，返回给前端展示，
+    // 第二个功能就是清除过期日志
     public void start() {
         logrThread = new Thread(new Runnable() {
             @Override
@@ -107,7 +107,7 @@ public class JobLogReportHelper {
                         }
                     } catch (Exception e) {
                         if (!toStop) {
-                            log.error(">>>>>>>>>>> xxl-job, job log report thread error:{}", e);
+                            log.error(">>>>>>>>>>> xxl-job, job log report thread error:{}", e.getMessage(), e);
                         }
                     }
 
