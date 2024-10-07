@@ -5,22 +5,20 @@ import com.xxl.job.admin.core.model.XxlJobInfo;
 import com.xxl.job.admin.core.model.XxlJobLog;
 import com.xxl.job.admin.core.trigger.TriggerTypeEnum;
 import com.xxl.job.admin.core.util.I18nUtil;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <h1>该类是当调度中心调度任务失败的时候，发送邮件用的</h1>
+ * 该类是当调度中心调度任务失败的时候，发送邮件用的
  */
 @Slf4j
 public class JobFailMonitorHelper {
 
+    @Getter
     private static JobFailMonitorHelper instance = new JobFailMonitorHelper();
-
-    public static JobFailMonitorHelper getInstance() {
-        return instance;
-    }
 
     // ---------------------- monitor ----------------------
 
@@ -128,12 +126,13 @@ public class JobFailMonitorHelper {
 
     public void toStop() {
         toStop = true;
+        // 中断monitorThread线程
         monitorThread.interrupt();
         try {
+            // 执行完monitorThread线程后续的代码
             monitorThread.join();
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
         }
     }
-
 }

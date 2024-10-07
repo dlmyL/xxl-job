@@ -30,5 +30,4 @@ public class XxlJobUser {
             return false;
         }
     }
-
 }

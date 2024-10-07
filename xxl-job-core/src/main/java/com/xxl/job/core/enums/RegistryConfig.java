@@ -1,9 +1,7 @@
 package com.xxl.job.core.enums;
 
 /**
- * <h1>注册默认参数配置</h1>
- *
- * Created by xuxueli on 17/5/10.
+ * 注册默认参数配置
  */
 public class RegistryConfig {
 
@@ -16,10 +14,8 @@ public class RegistryConfig {
      * 90s 就会自动踢下线
      */
     public static final int DEAD_TIMEOUT = BEAT_TIMEOUT * 3;
-
     /**
      * 注册类型
      */
     public enum RegistType{ EXECUTOR, ADMIN }
-
 }

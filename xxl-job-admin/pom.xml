@@ -66,6 +66,7 @@
 			<version>${mysql-connector-j.version}</version>
 		</dependency>
 
+
 		<!-- xxl-job-core -->
 		<dependency>
 			<groupId>com.xuxueli</groupId>

@@ -5,13 +5,11 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * <h1>返回信息的实体类，调度中心和执行器都会用到</h1>
- *
- * @param <T>
- * @author xuxueli 2015-12-4 16:32:31
+ * 返回信息的实体类，调度中心和执行器都会用到，定时任务的执行结果就封装在里面
  */
 @Data
 public class ReturnT<T> implements Serializable {
+
     public static final long serialVersionUID = 42L;
 
     public static final int SUCCESS_CODE = 200;

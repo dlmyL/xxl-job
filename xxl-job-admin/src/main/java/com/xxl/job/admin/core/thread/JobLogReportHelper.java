@@ -2,6 +2,7 @@ package com.xxl.job.admin.core.thread;
 
 import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
 import com.xxl.job.admin.core.model.XxlJobLogReport;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Calendar;
@@ -11,19 +12,14 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <h1>
- * 该组件的功能很简单，就是统计定时任务日志的信息，成功失败次数等等
+ * 该组件的功能很简单，就是统计定时任务日志的信息，成功失败次数等等，
  * 同时也会清除过期日志，过期日志时间是用户写在配置文件中的，默认为30天
- * </h1>
  */
 @Slf4j
 public class JobLogReportHelper {
 
+    @Getter
     private static JobLogReportHelper instance = new JobLogReportHelper();
-
-    public static JobLogReportHelper getInstance() {
-        return instance;
-    }
 
     // 工作线程
     private Thread logrThread;

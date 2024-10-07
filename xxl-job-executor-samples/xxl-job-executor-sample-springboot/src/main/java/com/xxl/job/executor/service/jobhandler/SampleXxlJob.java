@@ -2,8 +2,7 @@ package com.xxl.job.executor.service.jobhandler;
 
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.annotation.XxlJob;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedInputStream;
@@ -26,47 +25,53 @@ import java.util.concurrent.TimeUnit;
  *
  * @author xuxueli 2019-12-11 21:52:51
  */
+@Slf4j
 @Component
 public class SampleXxlJob {
-
-    private static Logger logger = LoggerFactory.getLogger(SampleXxlJob.class);
 
     /**
      * 1、简单任务示例（Bean模式）
      */
-    @XxlJob("demoJobHandler")
+    @XxlJob(value = "demoJobHandler")
     public void demoJobHandler() throws Exception {
+        log.info("开始执行简单任务");
+
         XxlJobHelper.log("XXL-JOB, Hello World.");
 
         for (int i = 0; i < 5; i++) {
             XxlJobHelper.log("beat at:" + i);
             TimeUnit.SECONDS.sleep(2);
         }
-        // default success
+
+        log.info("执行简单任务成功");
     }
 
 
     /**
      * 2、分片广播任务
      */
-    @XxlJob("shardingJobHandler")
+    @XxlJob(value = "shardingJobHandler")
     public void shardingJobHandler() throws Exception {
-
         // 分片参数
         int shardIndex = XxlJobHelper.getShardIndex();
         int shardTotal = XxlJobHelper.getShardTotal();
+
+        log.info("分片总数：{}，当前分片数：{}", shardTotal, shardIndex);
 
         XxlJobHelper.log("分片参数：当前分片序号 = {}, 总分片数 = {}", shardIndex, shardTotal);
 
         // 业务逻辑
         for (int i = 0; i < shardTotal; i++) {
             if (i == shardIndex) {
+                log.info("第 {} 片, 命中分片开始处理", i);
+
                 XxlJobHelper.log("第 {} 片, 命中分片开始处理", i);
             } else {
+                log.info("第 {} 片, 忽略", i);
+
                 XxlJobHelper.log("第 {} 片, 忽略", i);
             }
         }
-
     }
 
 
@@ -113,7 +118,6 @@ public class SampleXxlJob {
         } else {
             XxlJobHelper.handleFail("command exit value("+exitValue+") is failed");
         }
-
     }
 
 
@@ -232,7 +236,6 @@ public class SampleXxlJob {
                 XxlJobHelper.log(e2);
             }
         }
-
     }
 
     /**
@@ -243,11 +246,9 @@ public class SampleXxlJob {
         XxlJobHelper.log("XXL-JOB, Hello World.");
     }
     public void init(){
-        logger.info("init");
+        log.info("init");
     }
     public void destroy(){
-        logger.info("destroy");
+        log.info("destroy");
     }
-
-
 }

@@ -6,8 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * <h1>路由策略枚举类</h1>
+ * 路由策略
  */
+@Getter
 @AllArgsConstructor
 public enum ExecutorRouteStrategyEnum {
 
@@ -32,9 +33,7 @@ public enum ExecutorRouteStrategyEnum {
     // 分片广播
     SHARDING_BROADCAST(I18nUtil.getString("jobconf_route_shard"), null);
 
-    @Getter
     private final String title;
-    @Getter
     private final ExecutorRouter router;
 
     public static ExecutorRouteStrategyEnum match(String name, ExecutorRouteStrategyEnum defaultItem) {
@@ -47,5 +46,4 @@ public enum ExecutorRouteStrategyEnum {
         }
         return defaultItem;
     }
-
 }

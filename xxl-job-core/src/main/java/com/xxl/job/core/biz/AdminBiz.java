@@ -13,9 +13,6 @@ import java.util.List;
  */
 public interface AdminBiz {
 
-
-    // ---------------------- callback ----------------------
-
     /**
      * 任务回调
      * ------
@@ -23,9 +20,6 @@ public interface AdminBiz {
      * 地址格式：{调度中心根地址}/api/callback
      */
     ReturnT<String> callback(List<HandleCallbackParam> callbackParamList);
-
-
-    // ---------------------- registry ----------------------
 
     /**
      * 执行器注册
@@ -42,9 +36,5 @@ public interface AdminBiz {
      * 地址格式：{调度中心根地址}/api/registryRemove
      */
     ReturnT<String> registryRemove(RegistryParam registryParam);
-
-
-    // ---------------------- biz (custome) ----------------------
-    // group、job ... manage
 
 }

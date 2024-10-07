@@ -19,7 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
- * <h1>这个类不对 Web 界面进行开放，而是程序内部执行远程调用时使用的，这个类中的接口只对执行器那一端暴露</h1>
+ * 这个类不对Web界面进行开放，而是程序内部执行远程调用时使用的，只对执行器那一端暴露。
  */
 @Controller
 @RequiredArgsConstructor
@@ -29,51 +29,50 @@ public class JobApiController {
     private final AdminBiz adminBiz;
 
     /**
-     * <h2>该方法就是执行注册执行器的方法，执行器那一端会访问该接口进行回调、注册、注销</h2>
+     * 该方法就是执行注册执行器的方法，执行器那一端会访问该接口进行回调、注册、注销
      */
     @RequestMapping("/{uri}")
     @ResponseBody
-    @PermissionLimit(limit=false)
-    public ReturnT<String> api(HttpServletRequest request, @PathVariable("uri") String uri, @RequestBody(required = false) String data) {
-        // 判断是否为 POST 请求
+    @PermissionLimit(limit = false)
+    public ReturnT<String> api(HttpServletRequest request,
+                               @PathVariable("uri") String uri,
+                               @RequestBody(required = false) String data) {
+        // 判断是否为POST请求
         if (!"POST".equalsIgnoreCase(request.getMethod())) {
             return new ReturnT<>(ReturnT.FAIL_CODE, "invalid request, HttpMethod not support.");
         }
-        // 对路径判空处理
-        if (uri==null || uri.trim().length()==0) {
+
+        // 对请求路径判空处理
+        if (uri == null || uri.trim().length() == 0) {
             return new ReturnT<>(ReturnT.FAIL_CODE, "invalid request, uri-mapping empty.");
         }
-        // 判断执行器配置的 TOKEN 和调度中心的是否相等
-        if (XxlJobAdminConfig.getAdminConfig().getAccessToken()!=null
-                && XxlJobAdminConfig.getAdminConfig().getAccessToken().trim().length()>0
-                && !XxlJobAdminConfig.getAdminConfig().getAccessToken().equals(request.getHeader(XxlJobRemotingUtil.XXL_JOB_ACCESS_TOKEN))) {
+
+        // 判断执行器配置的token和调度中心的是否相等
+        if (XxlJobAdminConfig.getAdminConfig().getAccessToken() != null
+                && XxlJobAdminConfig.getAdminConfig().getAccessToken().trim().length() > 0
+                && !XxlJobAdminConfig.getAdminConfig().getAccessToken()
+                .equals(request.getHeader(XxlJobRemotingUtil.XXL_JOB_ACCESS_TOKEN))) {
             return new ReturnT<>(ReturnT.FAIL_CODE, "The access token is wrong.");
         }
 
-        // 判断是否为执行器端回调并上报执行结果
-        if ("callback".equals(uri)) {
-            List<HandleCallbackParam> callbackParamList = GsonTool.fromJson(data, List.class, HandleCallbackParam.class);
-            // exec => AdminBizImpl#callback
-            return adminBiz.callback(callbackParamList);
+        switch (uri) {
+            // ==执行器执行结果回调==
+            case "callback":
+                List<HandleCallbackParam> callbackParamList = GsonTool.fromJson(data, List.class, HandleCallbackParam.class);
+                return adminBiz.callback(callbackParamList);
+            // ==执行器注册==
+            case "registry": {
+                RegistryParam registryParam = GsonTool.fromJson(data, RegistryParam.class);
+                return adminBiz.registry(registryParam);
+            }
+            // ==执行器注销==
+            case "registryRemove": {
+                RegistryParam registryParam = GsonTool.fromJson(data, RegistryParam.class);
+                return adminBiz.registryRemove(registryParam);
+            }
+            // 请求路径都不匹配则返回失败
+            default:
+                return new ReturnT<>(ReturnT.FAIL_CODE, "invalid request, uri-mapping(" + uri + ") not found.");
         }
-        // 判断是否为注册操作
-        else if ("registry".equals(uri)) {
-            RegistryParam registryParam = GsonTool.fromJson(data, RegistryParam.class);
-            // exec => AdminBizImpl#registry
-            // 执行注册任务
-            return adminBiz.registry(registryParam);
-        }
-        // 判断是否为移除执行器操作
-        else if ("registryRemove".equals(uri)) {
-            RegistryParam registryParam = GsonTool.fromJson(data, RegistryParam.class);
-            // exec => AdminBizImpl#registryRemove
-            // 执行移除任务
-            return adminBiz.registryRemove(registryParam);
-        } else {
-            // 都不匹配则返回失败
-            return new ReturnT<>(ReturnT.FAIL_CODE, "invalid request, uri-mapping(" + uri + ") not found.");
-        }
-
     }
-
 }

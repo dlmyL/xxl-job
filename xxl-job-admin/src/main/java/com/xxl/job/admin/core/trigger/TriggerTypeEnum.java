@@ -5,11 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * <h1>
  * 触发枚举类型，这个其实还是对应着触发器任务的类型
- * 一般都是 cron 类型的
- * </h1>
+ * 一般都是cron类型的
  */
+@Getter
 @AllArgsConstructor
 public enum TriggerTypeEnum {
 
@@ -20,7 +19,5 @@ public enum TriggerTypeEnum {
     API(I18nUtil.getString("jobconf_trigger_type_api")),
     MISFIRE(I18nUtil.getString("jobconf_trigger_type_misfire"));
 
-    @Getter
     private final String title;
-
 }

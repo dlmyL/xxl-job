@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * <h1>这个就是用于执行器回调定时任务执行结果的包装类，执行结果的信息用这个类的对象封装</h1>
+ * 这个就是用于执行器回调定时任务执行结果的包装类，执行结果的信息用这个类的对象封装
  */
 @Data
 @NoArgsConstructor

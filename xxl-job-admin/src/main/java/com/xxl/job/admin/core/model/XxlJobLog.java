@@ -44,5 +44,4 @@ public class XxlJobLog {
 
     // 警报的状态码，0是默认，1是不需要报警，2是报警成功，3是报警失败
     private int alarmStatus;
-
 }

@@ -46,6 +46,7 @@ public class XxlJobRemotingUtil {
             }
         });
     }
+
     private static final TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
         @Override
         public java.security.cert.X509Certificate[] getAcceptedIssuers() {
@@ -58,13 +59,14 @@ public class XxlJobRemotingUtil {
         public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         }
     }};
-    // trust-https end
-
 
     /**
      * <h2>发送 POST 请求</h2>
      */
-    public static ReturnT postBody(String url, String accessToken, int timeout, Object requestObj, Class returnTargClassOfT) {
+    public static ReturnT postBody(String url,
+                                   String accessToken,
+                                   int timeout, Object requestObj,
+                                   Class returnTargClassOfT) {
         HttpURLConnection connection = null;
         BufferedReader bufferedReader = null;
         try {
@@ -77,6 +79,7 @@ public class XxlJobRemotingUtil {
                 HttpsURLConnection https = (HttpsURLConnection) connection;
                 trustAllHosts(https);
             }
+
             // Connection 对象赋值
             connection.setRequestMethod("POST");
             connection.setDoOutput(true);
@@ -92,6 +95,7 @@ public class XxlJobRemotingUtil {
                 // 设置令牌，以键值对的形式，键就是该类的静态成员变量
                 connection.setRequestProperty(XXL_JOB_ACCESS_TOKEN, accessToken);
             }
+
             // 进行连接
             connection.connect();
 
@@ -122,6 +126,7 @@ public class XxlJobRemotingUtil {
             while ((line = bufferedReader.readLine()) != null) {
                 result.append(line);
             }
+
             // 转换为字符串
             String resultJson = result.toString();
 
@@ -133,7 +138,6 @@ public class XxlJobRemotingUtil {
                 log.error("xxl-job remoting (url="+url+") response content invalid("+ resultJson +").", e);
                 return new ReturnT<String>(ReturnT.FAIL_CODE, "xxl-job remoting (url="+url+") response content invalid("+ resultJson +").");
             }
-
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return new ReturnT<String>(ReturnT.FAIL_CODE, "xxl-job remoting error("+ e.getMessage() +"), for url : " + url);
@@ -150,5 +154,4 @@ public class XxlJobRemotingUtil {
             }
         }
     }
-
 }

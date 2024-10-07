@@ -5,19 +5,15 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * <h1>定时任务调度失败策略</h1>
+ * 定时任务调度失败策略
  */
 @AllArgsConstructor
 public enum MisfireStrategyEnum {
 
-    /**
-     * 默认什么也不做
-     */
+    /** 默认什么也不做 */
     DO_NOTHING(I18nUtil.getString("misfire_strategy_do_nothing")),
 
-    /**
-     * 失败后重试一次
-     */
+    /** 失败后马上重试一次 */
     FIRE_ONCE_NOW(I18nUtil.getString("misfire_strategy_fire_once_now"));
 
     @Getter
@@ -31,5 +27,4 @@ public enum MisfireStrategyEnum {
         }
         return defaultItem;
     }
-
 }

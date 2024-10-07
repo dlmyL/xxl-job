@@ -9,27 +9,35 @@ import com.xxl.job.admin.core.scheduler.MisfireStrategyEnum;
 import com.xxl.job.admin.core.scheduler.ScheduleTypeEnum;
 import com.xxl.job.admin.core.thread.JobScheduleHelper;
 import com.xxl.job.admin.core.util.I18nUtil;
-import com.xxl.job.admin.dao.*;
+import com.xxl.job.admin.dao.XxlJobGroupDao;
+import com.xxl.job.admin.dao.XxlJobInfoDao;
+import com.xxl.job.admin.dao.XxlJobLogDao;
+import com.xxl.job.admin.dao.XxlJobLogGlueDao;
+import com.xxl.job.admin.dao.XxlJobLogReportDao;
 import com.xxl.job.admin.service.XxlJobService;
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.enums.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.glue.GlueTypeEnum;
 import com.xxl.job.core.util.DateUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * <h1>操纵定时任务的核心逻辑，都在这个类里面</h1>
  */
+@Slf4j
 @Service
 public class XxlJobServiceImpl implements XxlJobService {
-
-    private static Logger logger = LoggerFactory.getLogger(XxlJobServiceImpl.class);
 
     @Resource
     private XxlJobGroupDao xxlJobGroupDao;
@@ -65,7 +73,12 @@ public class XxlJobServiceImpl implements XxlJobService {
      */
     @Override
     public ReturnT<String> add(XxlJobInfo jobInfo) {
-        // 先查询到该定时任务对应的执行器
+        /*
+        先查询到该定时任务对应的执行器:
+        SELECT *
+		FROM xxl_job_group AS t
+		WHERE t.id = #{id}
+         */
         XxlJobGroup group = xxlJobGroupDao.load(jobInfo.getJobGroup());
         if (group == null) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_choose") + I18nUtil.getString("jobinfo_field_jobgroup")));
@@ -82,14 +95,12 @@ public class XxlJobServiceImpl implements XxlJobService {
         if (scheduleTypeEnum == null) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("schedule_type") + I18nUtil.getString("system_unvalid")));
         }
-        // 判断是否为cron调度类型
-        if (scheduleTypeEnum == ScheduleTypeEnum.CRON) {
+
+        if (scheduleTypeEnum == ScheduleTypeEnum.CRON/*cron调度*/) {
             if (jobInfo.getScheduleConf() == null || !CronExpression.isValidExpression(jobInfo.getScheduleConf())) {
                 return new ReturnT<>(ReturnT.FAIL_CODE, "Cron" + I18nUtil.getString("system_unvalid"));
             }
-        }
-        // 是否为固定频率
-        else if (scheduleTypeEnum == ScheduleTypeEnum.FIX_RATE) {
+        } else if (scheduleTypeEnum == ScheduleTypeEnum.FIX_RATE/*固定频率*/) {
             if (jobInfo.getScheduleConf() == null) {
                 return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("schedule_type")));
             }
@@ -107,10 +118,12 @@ public class XxlJobServiceImpl implements XxlJobService {
         if (GlueTypeEnum.match(jobInfo.getGlueType()) == null) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_gluetype") + I18nUtil.getString("system_unvalid")));
         }
+
         // 判断JobHandler的名字是否为空，并且运行模式是否为Bean模式
         if (GlueTypeEnum.BEAN == GlueTypeEnum.match(jobInfo.getGlueType()) && (jobInfo.getExecutorHandler() == null || jobInfo.getExecutorHandler().trim().length() == 0)) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("system_please_input") + "JobHandler"));
         }
+
         // 如果运行模式为在线编码模式，判断源码是否为空
         if (GlueTypeEnum.GLUE_SHELL == GlueTypeEnum.match(jobInfo.getGlueType()) && jobInfo.getGlueSource() != null) {
             jobInfo.setGlueSource(jobInfo.getGlueSource().replaceAll("\r", ""));
@@ -120,10 +133,12 @@ public class XxlJobServiceImpl implements XxlJobService {
         if (ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null) == null) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorRouteStrategy") + I18nUtil.getString("system_unvalid")));
         }
+
         // 判断调度失败策略是否为空
         if (MisfireStrategyEnum.match(jobInfo.getMisfireStrategy(), null) == null) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("misfire_strategy") + I18nUtil.getString("system_unvalid")));
         }
+
         // 判断阻塞策略是否为空
         if (ExecutorBlockStrategyEnum.match(jobInfo.getExecutorBlockStrategy(), null) == null) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_executorBlockStrategy") + I18nUtil.getString("system_unvalid")));
@@ -151,6 +166,7 @@ public class XxlJobServiceImpl implements XxlJobService {
             }
             // 去掉最后一个句号
             temp = temp.substring(0, temp.length() - 1);
+
             // 设置子任务id
             jobInfo.setChildJobId(temp);
         }
@@ -158,7 +174,58 @@ public class XxlJobServiceImpl implements XxlJobService {
         jobInfo.setAddTime(new Date());
         jobInfo.setUpdateTime(new Date());
         jobInfo.setGlueUpdatetime(new Date());
-        // 保存定时任务
+        /*
+        保存定时任务:
+        INSERT INTO xxl_job_info (
+			job_group,
+			job_desc,
+			add_time,
+			update_time,
+			author,
+			alarm_email,
+			schedule_type,
+			schedule_conf,
+			misfire_strategy,
+            executor_route_strategy,
+			executor_handler,
+			executor_param,
+			executor_block_strategy,
+			executor_timeout,
+			executor_fail_retry_count,
+			glue_type,
+			glue_source,
+			glue_remark,
+			glue_updatetime,
+			child_jobid,
+			trigger_status,
+			trigger_last_time,
+			trigger_next_time
+		) VALUES (
+			#{jobGroup},
+			#{jobDesc},
+			#{addTime},
+			#{updateTime},
+			#{author},
+			#{alarmEmail},
+			#{scheduleType},
+			#{scheduleConf},
+			#{misfireStrategy},
+			#{executorRouteStrategy},
+			#{executorHandler},
+			#{executorParam},
+			#{executorBlockStrategy},
+			#{executorTimeout},
+			#{executorFailRetryCount},
+			#{glueType},
+			#{glueSource},
+			#{glueRemark},
+			#{glueUpdatetime},
+			#{childJobId},
+			#{triggerStatus},
+			#{triggerLastTime},
+			#{triggerNextTime}
+		);
+         */
         xxlJobInfoDao.save(jobInfo);
         if (jobInfo.getId() < 1) {
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_add") + I18nUtil.getString("system_fail")));
@@ -278,7 +345,7 @@ public class XxlJobServiceImpl implements XxlJobService {
                 // 把新的执行时间赋值给上面的nextTriggerTime
                 nextTriggerTime = nextValidTime.getTime();
             } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+                log.error(e.getMessage(), e);
                 return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("schedule_type") + I18nUtil.getString("system_unvalid")));
             }
         }
@@ -345,7 +412,7 @@ public class XxlJobServiceImpl implements XxlJobService {
             // 下一次执行时间赋值
             nextTriggerTime = nextValidTime.getTime();
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             return new ReturnT<>(ReturnT.FAIL_CODE, (I18nUtil.getString("schedule_type") + I18nUtil.getString("system_unvalid")));
         }
         // 修改定时任务的状态，改为运行

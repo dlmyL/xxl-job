@@ -18,17 +18,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * <h1>发送报警邮件的实现类</h1>
- *
- * @author xuxueli 2020-01-19
+ * 发送报警邮件的实现类
  */
 @Slf4j
 @Component
 public class EmailJobAlarm implements JobAlarm {
 
-    /**
-     * <h2>真正发送报警邮件的逻辑</h2>
-     */
     @Override
     public boolean doAlarm(XxlJobInfo info, XxlJobLog jobLog) {
         boolean alarmResult = true;
@@ -39,6 +34,7 @@ public class EmailJobAlarm implements JobAlarm {
             if (jobLog.getTriggerCode() != ReturnT.SUCCESS_CODE) {
                 alarmContent += "<br>TriggerMsg=<br>" + jobLog.getTriggerMsg();
             }
+
             if (jobLog.getHandleCode() > 0 && jobLog.getHandleCode() != ReturnT.SUCCESS_CODE) {
                 alarmContent += "<br>HandleCode=" + jobLog.getHandleMsg();
             }
@@ -62,7 +58,6 @@ public class EmailJobAlarm implements JobAlarm {
                     helper.setTo(email);
                     helper.setSubject(title);
                     helper.setText(content, true);
-                    // EXEC JavaMailSender#send
                     // 真正的发送邮件
                     XxlJobAdminConfig.getAdminConfig().getMailSender().send(mimeMessage);
                 } catch (Exception e) {
@@ -71,12 +66,13 @@ public class EmailJobAlarm implements JobAlarm {
                 }
             }
         }
+
         // 返回发送结果
         return alarmResult;
     }
 
     /**
-     * <h2>这个就是前端要用到的模板，源码这样写有点不适合</h2>
+     * 这个就是前端要用到的模板，源码这样写有点不适合
      */
     private static final String loadEmailJobAlarmTemplate() {
         String mailBodyTemplate = "<h5>" + I18nUtil.getString("jobconf_monitor_detail") + "：</span>" +
@@ -102,5 +98,4 @@ public class EmailJobAlarm implements JobAlarm {
                 "</table>";
         return mailBodyTemplate;
     }
-
 }

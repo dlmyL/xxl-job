@@ -65,13 +65,12 @@ public class JobGroupController {
     }
 
     /**
-     * <h2>新增一个执行器方法</h2>
+     * 新增一个执行器方法
      */
     @RequestMapping("/save")
     @ResponseBody
     @PermissionLimit(adminuser = true)
     public ReturnT<String> save(XxlJobGroup xxlJobGroup) {
-
         // valid
         if (xxlJobGroup.getAppname() == null || xxlJobGroup.getAppname().trim().length() == 0) {
             return new ReturnT<>(500, (I18nUtil.getString("system_please_input") + "AppName"));
@@ -88,7 +87,9 @@ public class JobGroupController {
         if (xxlJobGroup.getTitle().contains(">") || xxlJobGroup.getTitle().contains("<")) {
             return new ReturnT<>(500, I18nUtil.getString("jobgroup_field_title") + I18nUtil.getString("system_unvalid"));
         }
-        if (xxlJobGroup.getAddressType() != 0) {
+
+        // 执行器地址类型：0=自动注册，1=手动录入
+        if (xxlJobGroup.getAddressType() != 0/*手动录入*/) {
             if (xxlJobGroup.getAddressList() == null || xxlJobGroup.getAddressList().trim().length() == 0) {
                 return new ReturnT<>(500, I18nUtil.getString("jobgroup_field_addressType_limit"));
             }
@@ -107,6 +108,14 @@ public class JobGroupController {
         // process
         xxlJobGroup.setUpdateTime(new Date());
 
+        /*
+        执行器持久化:
+
+        INSERT INTO xxl_job_group(`app_name`, `title`, `address_type`, `address_list`, `update_time`)
+        VALUES (#{appname}, #{title}, #{addressType}, #{addressList}, #{updateTime})
+
+        1	xxl-job-executor-sample	示例执行器	0	http://192.168.31.168:9997/,http://192.168.31.168:9998/,http://192.168.31.168:9999/	2024-09-28 07:16:32
+         */
         int ret = xxlJobGroupDao.save(xxlJobGroup);
         return (ret > 0) ? ReturnT.SUCCESS : ReturnT.FAIL;
     }

@@ -8,12 +8,11 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * <h1>路由策略抽象类</h1>
+ * 路由策略抽象类
  */
 public abstract class ExecutorRouter {
 
     protected static Logger logger = LoggerFactory.getLogger(ExecutorRouter.class);
 
     public abstract ReturnT<String> route(TriggerParam triggerParam, List<String> addressList);
-
 }

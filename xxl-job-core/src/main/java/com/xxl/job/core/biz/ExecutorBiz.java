@@ -47,5 +47,4 @@ public interface ExecutorBiz {
      * 地址格式：{执行器内嵌服务根地址}/log
      */
     ReturnT<LogResult> log(LogParam logParam);
-
 }

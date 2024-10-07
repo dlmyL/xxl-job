@@ -14,41 +14,31 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * <h1>这个类是用来发送报警邮件的，但实际上真正的功能实在 EmailJobAlarm 中实现的</h1>
+ * 这个类是用来发送报警邮件的，但实际上真正的功能实在EmailJobAlarm中实现的。
  */
 @Slf4j
 @Component
 public class JobAlarmer implements ApplicationContextAware, InitializingBean {
 
-    /**
-     * spring 容器
-     */
-    private ApplicationContext applicationContext;
-    /**
-     * 邮件报警器集合
-     */
+    // 邮件报警器集合
     private List<JobAlarm> jobAlarmList;
+
+    private ApplicationContext applicationContext;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 
-    /**
-     * <h2>该方法会在容器中的 BEAN 初始化完毕后被调用</h2>
-     */
     @Override
     public void afterPropertiesSet() throws Exception {
-        // 把容器中所有的邮件报警器收集到 jobAlarmList 中
+        // 把所有的邮件报警器收集到jobAlarmList中
         Map<String, JobAlarm> serviceBeanMap = applicationContext.getBeansOfType(JobAlarm.class);
         if (serviceBeanMap != null && serviceBeanMap.size() > 0) {
             jobAlarmList = new ArrayList<>(serviceBeanMap.values());
         }
     }
 
-    /**
-     * <h2>在 JobFailMonitorHelper 类中被调用到的发送报警邮件的方法</h2>
-     */
     public boolean alarm(XxlJobInfo info, XxlJobLog jobLog) {
         boolean result = false;
         // 先判断邮件报警器集合是否为空
@@ -57,18 +47,20 @@ public class JobAlarmer implements ApplicationContextAware, InitializingBean {
             result = true;
             // 遍历邮件报警器
             for (JobAlarm alarm : jobAlarmList) {
-                // 设置发送结果为 false
+                // 设置发送结果为false
                 boolean resultItem = false;
                 try {
-                    // EXEC EmailJobAlarm#doAlarm
                     // 在这里真正发送报警邮件给用户，然后返回给用户发送结果
                     resultItem = alarm.doAlarm(info, jobLog);
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
                 }
                 if (!resultItem) {
-                    // 在这里可以看到，如果发送失败，就把最开始设置的 result 重新改为 false
-                    // 并且这里可以明白，只要有一个报警器发送邮件失败，总的发送结果就会被设置为失败
+                    /*
+                    在这里可以看到，如果发送失败，就把最开始设置的result重新改为false，
+                    并且这里可以明白，只要有一个报警器发送邮件失败，总的发送结果就会被
+                    设置为失败。
+                     */
                     result = false;
                 }
             }
@@ -76,5 +68,4 @@ public class JobAlarmer implements ApplicationContextAware, InitializingBean {
 
         return result;
     }
-
 }

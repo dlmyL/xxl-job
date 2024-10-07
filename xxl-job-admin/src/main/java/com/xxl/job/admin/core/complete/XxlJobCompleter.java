@@ -12,57 +12,73 @@ import com.xxl.job.core.context.XxlJobContext;
 import java.text.MessageFormat;
 
 /**
- * <h1>更新日志信息，触发子任务的类</h1>
+ * 更新日志信息，触发子任务的类
  */
 public class XxlJobCompleter {
 
     public static int updateHandleInfoAndFinish(XxlJobLog xxlJobLog) {
-        // 触发子任务的方法
+        // 触发子任务
         finishJob(xxlJobLog);
-        // 判断字符串长度
+
+        // 判断字符串长度，太长的话需要截取一段
         if (xxlJobLog.getHandleMsg().length() > 15000) {
-            // 太长的话需要截取一段
             xxlJobLog.setHandleMsg(xxlJobLog.getHandleMsg().substring(0, 15000));
         }
-        // 更新数据库
+
+        /*
+        更新数据库：
+        UPDATE xxl_job_log
+        SET `handle_time`= #{handleTime},
+            `handle_code`= #{handleCode},
+            `handle_msg` = #{handleMsg}
+        WHERE `id`= #{id}
+         */
         return XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().updateHandleInfo(xxlJobLog);
     }
 
     /**
-     * <h2>触发子任务的方法</h2>
+     * 触发子任务的方法
      */
     private static void finishJob(XxlJobLog xxlJobLog) {
-        // 先判断定时任务是不是执行成功的状态
         String triggerChildMsg = null;
+        // 先判断定时任务是不是执行成功的状态
         if (XxlJobContext.HANDLE_CODE_SUCCESS == xxlJobLog.getHandleCode()) {
-            // 如果成功了，就先得到该定时任务的具体信息
+            /*
+            如果定时任务执行成功了，就先得到该定时任务的具体信息：
+                SELECT *
+                FROM  xxl_job_info AS t
+                WHERE t.id = #{id}
+             */
             XxlJobInfo xxlJobInfo = XxlJobAdminConfig.getAdminConfig().getXxlJobInfoDao().loadById(xxlJobLog.getJobId());
-            // 判断子任务 ID 不为 null
-            if (xxlJobInfo != null && xxlJobInfo.getChildJobId() != null && xxlJobInfo.getChildJobId().trim().length() > 0) {
+            if (xxlJobInfo != null
+                    && xxlJobInfo.getChildJobId() != null
+                    && xxlJobInfo.getChildJobId().trim().length() > 0) {
                 triggerChildMsg = "<br><br><span style=\"color:#00c0ef;\" > >>>>>>>>>>>" + I18nUtil.getString("jobconf_trigger_child_run") + "<<<<<<<<<<< </span><br>";
-                // 如果有多个子任务，就切分子任务 ID 为数组
+                // 如果有多个子任务，就切分子任务ID 数组
                 String[] childJobIds = xxlJobInfo.getChildJobId().split(",");
-                // 遍历子任务 ID 数组
+                // 遍历子任务 D数组
                 for (int i = 0; i < childJobIds.length; i++) {
-                    // 得到子任务 ID
-                    int childJobId = (childJobIds[i] != null && childJobIds[i].trim().length() > 0 && isNumeric(childJobIds[i])) ? Integer.valueOf(childJobIds[i]) : -1;
+                    // 得到子任务ID
+                    int childJobId = (childJobIds[i] != null && childJobIds[i].trim().length() > 0
+                            && isNumeric(childJobIds[i])) ? Integer.valueOf(childJobIds[i]) : -1;
                     if (childJobId > 0) {
-                        // EXEC
-                        // 直接调度子任务
-                        JobTriggerPoolHelper.trigger(childJobId, TriggerTypeEnum.PARENT, -1, null, null, null);
+                        // ==调度子任务==
+                        JobTriggerPoolHelper.trigger(childJobId, TriggerTypeEnum.PARENT, -1,
+                                null, null, null);
                         // 设置调度成功的结果
                         ReturnT<String> triggerChildResult = ReturnT.SUCCESS;
                         triggerChildMsg += MessageFormat.format(I18nUtil.getString("jobconf_callback_child_msg1"),
                                 (i + 1), childJobIds.length, childJobIds[i],
-                                (triggerChildResult.getCode() == ReturnT.SUCCESS_CODE ? I18nUtil.getString("system_success") : I18nUtil.getString("system_fail")),
+                                (triggerChildResult.getCode() == ReturnT.SUCCESS_CODE ?
+                                        I18nUtil.getString("system_success") : I18nUtil.getString("system_fail")),
                                 triggerChildResult.getMsg());
                     } else {
-                        triggerChildMsg += MessageFormat.format(I18nUtil.getString("jobconf_callback_child_msg2"),
-                                (i + 1), childJobIds.length, childJobIds[i]);
+                        triggerChildMsg += MessageFormat.format(I18nUtil.getString("jobconf_callback_child_msg2"), (i + 1), childJobIds.length, childJobIds[i]);
                     }
                 }
             }
         }
+
         if (triggerChildMsg != null) {
             xxlJobLog.setHandleMsg(xxlJobLog.getHandleMsg() + triggerChildMsg);
         }
@@ -76,5 +92,4 @@ public class XxlJobCompleter {
             return false;
         }
     }
-
 }
